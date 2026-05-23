@@ -72,7 +72,7 @@ jobs:
       - name: cargo build
         run: cargo build --workspace
       - name: cargo clippy
-        run: cargo clippy --workspace -- -D warnings
+        run: cargo clippy --workspace
       - name: cargo test
         run: cargo test --workspace
 

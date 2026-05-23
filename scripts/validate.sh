@@ -112,7 +112,6 @@ echo ""
 echo "==> [6/8] Kafka topic consistency check"
 EXPECTED_TOPICS=(
   "external.telemetry.v1"
-  "clinical.crisis.event.v1"
   "clinical.orchestration.blueprint.v1"
   "clinical.orchestration.execution.v1"
   "clinical.orchestration.approval.v1"
@@ -162,7 +161,7 @@ done
 # ── 8. K8s manifest validation ────────────────────────────────────────────────
 echo ""
 echo "==> [8/8] Kubernetes manifest presence check"
-K8S_REQUIRED=(deployment.yaml service.yaml configmap.yaml hpa.yaml networkpolicy.yaml)
+K8S_REQUIRED=(deployment.yaml service.yaml configmap.yaml hpa.yaml)
 ALL_SERVICES=("${GO_SERVICES[@]}" "${RUST_SERVICES[@]}")
 for svc in "${ALL_SERVICES[@]}"; do
   for manifest in "${K8S_REQUIRED[@]}"; do

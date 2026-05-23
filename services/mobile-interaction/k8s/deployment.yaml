@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mobile-interaction
+  namespace: medusa-interaction
+  labels:
+    app: mobile-interaction
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mobile-interaction
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: mobile-interaction
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: mobile-interaction
+        image: antigravity/mobile-interaction:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8087
+          name: http
+        envFrom:
+        - configMapRef:
+            name: mobile-interaction-config
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8087
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8087
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3

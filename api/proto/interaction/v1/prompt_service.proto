@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package antigravity.interaction.v1;
-option go_package = "github.com/antigravity/mono/api/gen/go/interaction/v1";
+option go_package = "github.com/antigravity/mono/api/gen/go/interaction/v1;interactionv1";
 
 import "google/protobuf/timestamp.proto";
 

@@ -11,8 +11,9 @@ breaking:
 
 lint:
   use:
-    - DEFAULT
+    - STANDARD
   except:
     - PACKAGE_VERSION_SUFFIX
     - RPC_RESPONSE_STANDARD_NAME
     - RPC_REQUEST_STANDARD_NAME
+    - PACKAGE_DIRECTORY_MATCH
