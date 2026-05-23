@@ -2,8 +2,8 @@
 
 MEDUSA is a premium, real-time emergency dispatch and automated intelligence-orchestration dashboard. Designed for crisis dispatchers, medical logistics teams, and field commanders, MEDUSA aggregates raw emergency signals, resolves conflicting field data, manages active responder units, and automates vehicle routing dynamically.
 
-Live Service: **[https://medusa-frontend-1071246692114.us-central1.run.app](https://medusa-frontend-1071246692114.us-central1.run.app)**
-Android Build: Located in the `android/` directory (compiled using Capacitor)
+
+**Live Service:** [Access the Web Dashboard](https://medusa-frontend-1071246692114.us-central1.run.app) | **Android App:** [Download the Mobile APK](https://github.com/NeuraHals/MEDUSA/releases) (compiled using Capacitor)
 
 ---
 
