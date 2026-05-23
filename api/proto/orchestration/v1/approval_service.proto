@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package antigravity.orchestration.v1;
+
+option go_package = "github.com/antigravity/mono/api/gen/go/orchestration/v1;orchestrationv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ApprovalService handles human-in-the-loop approval gating for clinical actions.
+service ApprovalService {
+  // RequestApproval submits a blueprint for operator approval.
+  rpc RequestApproval(ApprovalRequest) returns (ApprovalResponse);
+  // GetApprovalStatus queries the current state of a pending approval.
+  rpc GetApprovalStatus(ApprovalStatusRequest) returns (ApprovalStatusResponse);
+  // SubmitDecision relays a biometric operator decision from MIA.
+  rpc SubmitDecision(DecisionRequest) returns (DecisionResponse);
+}
+
+// ApprovalRequest is dispatched by the AOA to the HOA when a blueprint action
+// requires human authorisation before execution.
+message ApprovalRequest {
+  string blueprint_id    = 1;
+  string action_id       = 2;
+  string hospital_id     = 3;
+  uint32 pri_score       = 4;   // Priority Index (1–5, 5=critical)
+  string classification  = 5;
+  string description     = 6;
+  string requesting_agent = 7;
+  string trace_id        = 8;
+  string idempotency_key = 9;
+  google.protobuf.Timestamp requested_at = 10;
+}
+
+message ApprovalResponse {
+  string approval_id = 1;
+  string state       = 2; // PENDING | APPROVED | DENIED | GLASS_BREAK | TIMEOUT
+  string trace_id    = 3;
+}
+
+message ApprovalStatusRequest {
+  string approval_id = 1;
+  string trace_id    = 2;
+}
+
+message ApprovalStatusResponse {
+  string approval_id    = 1;
+  string state          = 2;
+  string decision_by    = 3;
+  string glass_break_reason = 4;
+  google.protobuf.Timestamp decided_at = 5;
+}
+
+message DecisionRequest {
+  string approval_id    = 1;
+  string blueprint_id   = 2;
+  string action_id      = 3;
+  string operator_id    = 4;
+  string decision       = 5; // APPROVED | DENIED
+  string biometric_jwt_hash = 6; // SHA-256 fingerprint — raw JWT never transmitted
+  string trace_id       = 7;
+  string idempotency_key = 8;
+}
+
+message DecisionResponse {
+  bool accepted  = 1;
+  string state   = 2;
+  string trace_id = 3;
+}

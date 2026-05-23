@@ -1,0 +1,22 @@
+syntax = "proto3";
+package antigravity.allocation.v1;
+option go_package = "github.com/antigravity/mono/api/gen/go/allocation/v1";
+
+import "google/protobuf/timestamp.proto";
+
+service AllocationService {
+  rpc GetBlueprint(BlueprintRequest) returns (BlueprintResponse);
+}
+
+message BlueprintRequest {
+  string crisis_id = 1;
+  string trace_id = 2;
+}
+
+message BlueprintResponse {
+  string blueprint_id = 1;
+  string crisis_id = 2;
+  bool success = 3;
+  string error = 4;
+  google.protobuf.Timestamp generated_at = 5;
+}

@@ -1,0 +1,93 @@
+# Constrained Emergency Resource Model
+
+This document defines the physical and digital assets governed by the Resource Allocation Agent (RAA), detailing their operational constraints, inter-dependencies, and failure impacts.
+
+## 1. Ambulances
+*   **Operational Purpose:** Rapid patient extraction and inter-facility transfer.
+*   **Capacity Limits:** Finite fleet size; 1-2 patients per vehicle depending on acuity.
+*   **Allocation Constraints:** Geographic distance, road viability, crew fatigue limits.
+*   **Priority Rules:** Immediate life-threat (Trauma/Stroke) > Time-sensitive (Dehydration) > Stable transfers.
+*   **Failure Impact:** Pre-hospital patient mortality; stranded patients.
+*   **Recovery Conditions:** Units restocked, refueled, and returned to base.
+*   **Dependencies:** Viable road networks (Traffic APIs), Fuel reserves, Dispatch communications.
+
+## 2. ICU Beds
+*   **Operational Purpose:** Highest acuity continuous patient monitoring and life support.
+*   **Capacity Limits:** Hard physical limit per facility; requires 1:1 or 1:2 nurse staffing ratio.
+*   **Allocation Constraints:** Cannot exceed physical wall-gas (oxygen) or specialized monitor hookups.
+*   **Priority Rules:** Patient acuity score (Ventilator-dependent > Continuous telemetry > Stable step-down).
+*   **Failure Impact:** High in-hospital mortality; forced diversion of critical inbound EMS.
+*   **Recovery Conditions:** Patient discharged to step-down unit; terminal event.
+*   **Dependencies:** Uninterruptible Power (Generators), Staff availability, Network telemetry (EHR).
+
+## 3. Backup Generators
+*   **Operational Purpose:** Facility power continuity during grid failure.
+*   **Capacity Limits:** Finite kilowatt (kW) output; physical fuel tank volume.
+*   **Allocation Constraints:** Must not exceed 85% sustained load to prevent mechanical failure.
+*   **Priority Rules:** Red Receptacles (Life Support) > Server Rooms > HVAC > Administrative lighting.
+*   **Failure Impact:** Total facility blackout; immediate failure of ventilators and EHR.
+*   **Recovery Conditions:** Mains grid power restored and ATS synced; generator spun down.
+*   **Dependencies:** Fuel reserves, Cooling systems, ATS (Automatic Transfer Switch) functionality.
+
+## 4. Cybersecurity Isolation Servers
+*   **Operational Purpose:** Clean-room environment for restoring corrupted backups or analyzing malware.
+*   **Capacity Limits:** Limited compute (CPU/RAM) and isolated storage capacity.
+*   **Allocation Constraints:** Must remain 100% physically and logically severed from the main network.
+*   **Priority Rules:** Core EHR DB restoration > PACS (Imaging) DB > Active Directory reconstruction.
+*   **Failure Impact:** Inability to recover from ransomware; prolonged forced paper-charting downtime.
+*   **Recovery Conditions:** Primary network verified clean; isolation servers wiped and reset to baseline.
+*   **Dependencies:** Uncorrupted offline backups, clean installation media, physical power.
+
+## 5. Emergency Response Teams (Medical/Trauma)
+*   **Operational Purpose:** Rapid clinical intervention for crashing patients or mass casualty intake.
+*   **Capacity Limits:** Human biological limits (fatigue, cognitive load); finite number of specialized surgeons/RNs.
+*   **Allocation Constraints:** Cannot be in two physical locations simultaneously.
+*   **Priority Rules:** Highest immediate salvageability (Triage Red) over expectant (Black) or stable (Green).
+*   **Failure Impact:** Increased morbidity/mortality due to delayed clinical intervention.
+*   **Recovery Conditions:** Shift relief arrives; patient stabilized and handed off to standard ICU staff.
+*   **Dependencies:** PPE, Functioning trauma bays, Clean EHR/Medication access.
+
+## 6. Hospital Staff (General Clinical)
+*   **Operational Purpose:** Sustained baseline patient care, medication administration, and monitoring.
+*   **Capacity Limits:** Shift laws (max 12-16 hours); union ratios.
+*   **Allocation Constraints:** Specialized licensing (e.g., a pediatric RN cannot immediately run an adult ECMO machine).
+*   **Priority Rules:** Critical care coverage > ER Intake > Routine ward rounds > Elective procedures.
+*   **Failure Impact:** Medical errors, missed medications, forced diversion due to unsafe staffing ratios.
+*   **Recovery Conditions:** Off-duty recall mobilized; ambient crisis conditions stabilize.
+*   **Dependencies:** Safe travel routes to hospital, functioning HVAC (to prevent heat exhaustion).
+
+## 7. Fuel Reserves (Diesel)
+*   **Operational Purpose:** Power generation for generators and fuel for ambulance fleets.
+*   **Capacity Limits:** On-site tank volume (e.g., 10,000 gallons).
+*   **Allocation Constraints:** Burn rate scales exponentially with hospital electrical/HVAC load.
+*   **Priority Rules:** Life-safety generators > Ambulance fleet refueling.
+*   **Failure Impact:** Generator starvation leading to total blackout; stranded ambulance fleet.
+*   **Recovery Conditions:** Commercial tanker delivery completed.
+*   **Dependencies:** Clear road access for tankers; intact supply chain B2B contracts.
+
+## 8. Temporary Shelters (Triage Tents)
+*   **Operational Purpose:** Overflow capacity for low-acuity or specific cohort patients (e.g., cooling stations).
+*   **Capacity Limits:** Square footage; portable HVAC cooling capacity.
+*   **Allocation Constraints:** Requires level ground, external power drops, and physical security.
+*   **Priority Rules:** Dehydration/Heat exhaustion holding > Minor lacerations > Discharge waiting area.
+*   **Failure Impact:** ER waiting room gridlock; heatstroke in un-airconditioned holding zones.
+*   **Recovery Conditions:** ER backlog cleared; ambient temperatures drop.
+*   **Dependencies:** Portable generators, physical space, dedicated security/staffing.
+
+---
+
+## Simultaneous Crisis Competition Scenarios
+
+### Scenario A: Heatwave vs. Power Grid Outage
+**The Conflict:** A severe heatwave drives a massive influx of patients requiring cooling (ER Surge) and forces the hospital HVAC to 100%. The grid fails under the regional load, transferring the hospital to backup generators.
+**Resource Competition:** 
+*   **Fuel Reserves:** Generators burn fuel at 3x the normal rate due to maximum HVAC load.
+*   **Generators:** Cannot support 100% HVAC *and* 100% clinical load.
+**Orchestration Resolution:** The RAA enforces partial degradation. HVAC is disabled in administrative wings and reduced to 60% in clinical wards to drop the generator load and extend Fuel Reserve TTL. Temporary Shelters (Triage Tents) are deployed outdoors with independent portable generators to handle the Heatwave overflow without taxing the main facility generators.
+
+### Scenario B: Flooded Routes vs. Cyber Isolation
+**The Conflict:** A hurricane causes major flooding, cutting off main access roads. Concurrently, a threat actor exploits the chaos to launch a ransomware attack on the dispatch systems.
+**Resource Competition:**
+*   **Emergency Response Teams:** IT staff are needed to physically run communication relays (due to cyber isolation) while also needed to coordinate physical patient movements (due to floods).
+*   **Ambulances:** Stranded by floods, requiring complex rerouting, but the routing API server must be isolated due to the cyberattack.
+**Orchestration Resolution:** The system isolates the primary network but exempts a highly-monitored, micro-segmented VLAN dedicated solely to external CAD/GPS routing APIs. Ambulances operate autonomously via downloaded local maps, relying on High-Frequency radio (analog fallback) rather than IP-based dispatch to communicate with the ER regarding flood casualties.

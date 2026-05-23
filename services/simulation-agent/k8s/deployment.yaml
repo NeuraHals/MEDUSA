@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulation-agent
+  namespace: medusa-simulation
+  labels:
+    app: simulation-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simulation-agent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: simulation-agent
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: simulation-agent
+        image: antigravity/simulation-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8090
+          name: http
+        envFrom:
+        - configMapRef:
+            name: simulation-agent-config
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "1Gi"
+          limits:
+            cpu: "4000m"
+            memory: "4Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8090
+          initialDelaySeconds: 20
+          periodSeconds: 20
+          failureThreshold: 3

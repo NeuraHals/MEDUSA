@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package antigravity.interaction.v1;
+option go_package = "github.com/antigravity/mono/api/gen/go/interaction/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// PromptService is hosted by the Mobile Interaction Agent (MIA)
+// It is called by the HOA to deliver high-priority push notifications
+// to mobile devices and await a biometric signature.
+service PromptService {
+  rpc PromptDevice(PromptRequest) returns (PromptResponse);
+}
+
+message PromptRequest {
+  string prompt_id = 1;
+  string target_device_id = 2; // e.g. APNs/FCM token ID
+  string message = 3;
+  
+  // Mandatory metadata
+  string trace_id = 4;
+  string action_id = 5;
+}
+
+message PromptResponse {
+  string prompt_id = 1;
+  bool acknowledged = 2;
+  bytes biometric_jwt = 3; // Cryptographic validation of human identity
+  google.protobuf.Timestamp responded_at = 4;
+}

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package antigravity.interaction.v1;
+
+option go_package = "github.com/antigravity/mono/api/gen/go/interaction/v1;interactionv1";
+
+import "google/protobuf/timestamp.proto";
+
+// MobileInteractionService manages mobile operator session registration
+// and push notification synchronisation.
+service MobileInteractionService {
+  // RegisterDevice stores/refreshes a mobile operator session.
+  rpc RegisterDevice(DeviceRegistration) returns (RegistrationResponse);
+  // Heartbeat updates operator online status.
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+message DeviceRegistration {
+  string operator_id   = 1;
+  string device_token  = 2;
+  string platform      = 3; // ios | android
+  string phone_number  = 4;
+  string trace_id      = 5;
+  google.protobuf.Timestamp registered_at = 6;
+}
+
+message RegistrationResponse {
+  bool   registered   = 1;
+  string operator_id  = 2;
+  string trace_id     = 3;
+}
+
+message HeartbeatRequest {
+  string operator_id = 1;
+  string trace_id    = 2;
+  google.protobuf.Timestamp at = 3;
+}
+
+message HeartbeatResponse {
+  bool   online      = 1;
+  string operator_id = 2;
+}

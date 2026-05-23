@@ -1,0 +1,77 @@
+# Shared State Graph Architecture (Digital Twin)
+
+This document defines the Redis-backed (RedisGraph / Redis Enterprise) Shared State Graph. This graph functions as the real-time digital twin of the hospital ecosystem, tracking physical, digital, and conceptual entities.
+
+## 1. Graph Schema: Nodes & Edges
+
+### Node Types & Properties
+*   `HospitalZone` (id, name, floor, max_capacity, current_occupancy)
+*   `ICUBed` (id, status: [AVAILABLE, OCCUPIED, MAINTENANCE], wall_gas_status)
+*   `Generator` (id, kw_max, kw_current_load, fuel_pct, ttl_minutes)
+*   `Ambulance` (id, status, lat, lon, speed_kph, last_ping_utc)
+*   `RoadSegment` (id, traffic_status: [CLEAR, CONGESTED, CLOSED, FLOODED])
+*   `StaffAsset` (id, role: [TRAUMA_SURGEON, ER_RN, IT_SEC], shift_end_utc)
+*   `MobileDevice` (id, connectivity: [WIFI, CELLULAR, OFFLINE], battery_pct)
+*   `HVACSystem` (id, zone_id, status, load_pct, temp_c)
+*   `VLANNetwork` (id, subnet, security_posture: [NOMINAL, ISOLATED, COMPROMISED])
+*   `ActiveCrisis` (id, type, severity: [CRITICAL, SEVERE, MODERATE])
+
+### Edge Relationships (Directional)
+*   `(ICUBed)-[:LOCATED_IN]->(HospitalZone)`
+*   `(ICUBed)-[:POWERED_BY]->(Generator)`
+*   `(ICUBed)-[:NETWORKED_VIA]->(VLANNetwork)`
+*   `(HVACSystem)-[:COOLS]->(HospitalZone)`
+*   `(HVACSystem)-[:POWERED_BY]->(Generator)`
+*   `(StaffAsset)-[:CARRIES]->(MobileDevice)`
+*   `(MobileDevice)-[:REPORTED_AT]->(HospitalZone)` *(Geospatial inference)*
+*   `(Ambulance)-[:ROUTES_THROUGH]->(RoadSegment)`
+*   `(ActiveCrisis)-[:AFFECTS]->(HospitalZone | VLANNetwork | RoadSegment)`
+*   `(ActiveCrisis)-[:COMPOUNDS_WITH]->(ActiveCrisis)` *(Multi-crisis merging)*
+
+---
+
+## 2. Temporal Decay & State Synchronization
+
+*   **TTL Policies (Temporal State Decay):** Ephemeral telemetry nodes rely on Redis TTLs to enforce decay. If an `Ambulance` GPS ping is older than 5 minutes without an update, the `:REPORTED_AT` edge is autonomously deleted by Redis keyspace notifications, forcing the Correlation Agent to fall back to dead-reckoning.
+*   **Geospatial Indexing:** `Ambulance`, `RoadSegment`, and `MobileDevice` nodes utilize Redis `GEO` spatial indexing to allow sub-millisecond bounding-box queries (e.g., "Find all offline staff within 500m of HospitalZone A").
+*   **State Sync Logic:** The **Signal Ingestion Agent (SIA)** serves as the primary mutation engine for telemetry nodes (upserting GPS and Sensor readings).
+
+---
+
+## 3. Modeling Complex Scenarios
+
+### Cascading Dependency Tracking
+By walking the graph, the **Simulation Agent (SIPA)** calculates cascading failures:
+`MATCH (g:Generator {id:'Gen_3'})<-[:POWERED_BY]-(h:HVACSystem)-[:COOLS]->(z:HospitalZone)<-[:LOCATED_IN]-(b:ICUBed) WHERE g.fuel_pct = 0 RETURN b`
+*(Identifies every ICU bed that will fatally overheat if Generator 3 runs out of fuel).*
+
+### Compound Crisis Merging
+If the CCA detects two crises sharing an `:AFFECTS` edge to the same `HospitalZone`, it draws a `:COMPOUNDS_WITH` edge between the two `ActiveCrisis` nodes. The RAA detects this edge and automatically shifts from linear allocation to dynamic fractional degradation modeling.
+
+---
+
+## 4. Query Patterns & Semantic Retrieval
+
+*   **CCA (Correlation) Query Pattern:** High-frequency, shallow reads (Path length 1-2). "What anomalies share a VLAN?"
+*   **RAA (Resource Alloc) Query Pattern:** Deep traversal, heavy compute. "Find optimal path from Ambulance A to HospitalZone B avoiding nodes `[:AFFECTS]-(Crisis:FLOOD)`".
+*   **SIPA (Simulation) Query Pattern:** Graph cloning. SIPA clones the subgraph into an ephemeral namespace to run destructive Monte Carlo writes without impacting production state.
+
+---
+
+## 5. Write Ownership & Concurrency Controls
+
+*   **Write Ownership:**
+    *   **SIA/MIA:** Exclusive write access to `MobileDevice`, `Ambulance`, `RoadSegment`, telemetry edges.
+    *   **CCA:** Exclusive write access to `ActiveCrisis` and `:AFFECTS` edges.
+    *   **RAA:** Exclusive write access to `[:ASSIGNED_TO]` edges (allocating resources).
+    *   **AOA:** Exclusive write access to mutating physical infrastructure states (e.g., VLAN `security_posture`).
+*   **Distributed Lock Strategy (Redlock):** To prevent race conditions during resource allocation, the RAA utilizes the Redis Redlock algorithm. Before assigning an `ICUBed`, RAA acquires a 50ms distributed lock on the bed node. If the lock fails, it recalculates the PRI.
+*   **Graph Consistency Enforcement:** The Audit Agent continuously runs asynchronous Cypher integrity checks (e.g., ensuring an `ICUBed` is not `OCCUPIED` while simultaneously `ISOLATED` without an assigned `StaffAsset`).
+
+---
+
+## 6. Degraded-Mode Behavior (Redis Failure)
+
+*   If the primary Redis Graph cluster experiences a network partition, agents immediately pivot to **Stateless Execution Mode**.
+*   The RAA relies purely on the incoming JSON event payload from the Orchestration Bus rather than querying the holistic digital twin. Allocations drop from "Globally Optimal" to "Locally Safe" (FIFO processing).
+*   Any state mutations executed during degraded mode are recorded locally and bulk-synced to the Graph once the Redis master is restored.

@@ -1,0 +1,14 @@
+env: development
+health_addr: "0.0.0.0:8081"
+kafka_brokers:
+  - "kafka-broker:9093"
+kafka_input_topic: "external.telemetry.v1"
+kafka_output_topic: "clinical.orchestration.anomaly.v1"
+kafka_dlq_topic: "system.dlq.v1"
+kafka_consumer_group: "correlation-group"
+kafka_worker_pool_size: 8
+redis_url: "redis://redis-master:6379"
+otel_endpoint: "http://otel-collector:4317"
+window_seconds: 600
+anomaly_threshold: 0.72
+schema_version: "1.0.0"

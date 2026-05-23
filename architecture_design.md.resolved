@@ -1,0 +1,90 @@
+# Autonomous Healthcare Crisis Intelligence & Response System
+
+## 1. System Overview
+
+The Healthcare Crisis Intelligence & Response System is a multi-agent orchestration platform designed to operate as an autonomous hospital command center. It ingests multi-source signals, correlates disparate events to classify crises, optimally allocates constrained resources, and continuously adapts its response actions based on real-time feedback loops.
+
+## 2. Multi-Agent Topology
+
+The platform relies on a constellation of specialized autonomous agents operating in a continuous OODA (Observe, Orient, Decide, Act) loop.
+
+```mermaid
+graph TD
+    subgraph Data Sources
+        Sensors[IoT Sensors]
+        External[Weather/Traffic APIs]
+        IT[IT/Network Logs]
+        EHR[EHR & Bed Management]
+    end
+
+    subgraph Intelligence Layer
+        SIA[Signal Ingestion Agent]
+        CCA[Correlation & Classification Agent]
+    end
+
+    subgraph Orchestration Layer
+        RAA[Resource Allocation Agent]
+        AOA[Action Orchestrator Agent]
+    end
+
+    subgraph Adaptation Layer
+        RA[Recovery & Adaptation Agent]
+    end
+
+    Sensors --> SIA
+    External --> SIA
+    IT --> SIA
+    EHR --> SIA
+
+    SIA -->|Normalized Signals| CCA
+    CCA -->|Crisis Classification & Severity| RAA
+    RAA -->|Resource Availability Model| AOA
+    AOA -->|Execution Commands| Responders[Human/Automated Responders]
+    
+    Responders -->|Outcome Data| RA
+    RA -->|Failure/Side Effect Updates| CCA
+    RA -->|Constraint Updates| RAA
+```
+
+## 3. Core Agents
+
+- **Signal Ingestion Agent (SIA)**: Aggregates and normalizes high-velocity data streams from IT infrastructure, IoT devices (generators, HVAC), external APIs (weather, traffic), and hospital systems (EHR, bed management).
+- **Correlation & Classification Agent (CCA)**: Uses event correlation heuristics to detect patterns. It fuses low-level signals into high-level crisis classifications.
+- **Resource Allocation Agent (RAA)**: Maintains a real-time, dynamic constraint model of the hospital's resources (beds, specialized staff, power, blood supply, ambulances).
+- **Action Orchestrator Agent (AOA)**: The execution engine. It dispatches commands to automated systems (e.g., closing network ports) or issues high-priority directives to human teams via pagers/mobile devices.
+- **Recovery & Adaptation Agent (RA)**: Monitors the environment post-execution. If a dispatched action fails or causes negative side-effects, the RA injects constraint updates back into the RAA and CCA to force an immediate recalculation of the response plan.
+
+## 4. Crisis Scenarios & Signal Relationships
+
+### A. Ransomware Attacks
+- **Signals**: Unexpected mass encryption of files, sudden spikes in outbound network traffic, rapid sequence of failed administrator logins, disablement of endpoint security agents.
+- **Correlation**: SIA detects endpoint anomalies + Network logs show lateral movement. CCA classifies as *Active Cyber Crisis (Severity: Critical)*.
+- **Action**: AOA orchestrates immediate network segmentation, shutting down external connections, isolating EHR databases, and paging the cyber-incident response team.
+- **Recovery**: If malware propagates to isolated subnets (side effect), RA detects new infections and AOA physically powers down affected server racks.
+
+### B. Heatwave Patient Overload
+- **Signals**: Local weather APIs reporting extreme heat index, sudden spike in EMS dispatches for dehydration/heatstroke, rising ER wait times.
+- **Correlation**: Weather data + EHR admission complaint NLP analysis -> CCA classifies as *Heatwave Mass Casualty Incident*.
+- **Action**: RAA calculates bed deficits. AOA dispatches requests for off-duty nursing staff, initiates triage tent deployment in shaded areas, and halts elective surgeries to free up ICU/ER beds.
+- **Recovery**: If off-duty staff cannot arrive due to heat-buckled roads, RA notes the failure, and AOA redirects ambulances to neighboring facilities.
+
+### C. Flooded Ambulance Routes
+- **Signals**: River gauge sensors, local police scanners, traffic API congestion data, GPS telemetry from active ambulances showing zero movement.
+- **Correlation**: Topographical flood data + ambulance GPS stagnation -> CCA classifies as *Logistical Artery Failure*.
+- **Action**: RAA identifies alternate transport methods (e.g., helipad availability). AOA reroutes incoming ambulances via elevated highways and dispatches air transport for critical patients.
+- **Recovery**: If a rerouted ambulance encounters a newly flooded underpass, RA receives the block signal and instantly pushes a new route to the ambulance's navigation system.
+
+### D. Hospital Power Outages
+- **Signals**: Local grid failure API alerts, internal voltage drops, automatic transfer switch (ATS) activation logs, backup generator fuel level sensors.
+- **Correlation**: Grid failure + Generator startup -> CCA classifies as *Infrastructure Power Crisis*.
+- **Action**: RAA maps power consumption. AOA triggers automated load shedding of non-essential areas (e.g., administrative wing HVAC), secures power for life-support systems, and automatically files emergency fuel delivery requests.
+- **Recovery**: If a generator overheats and fails (side effect), RA detects the failure. AOA immediately orchestrates evacuation of patients from the affected wing to a fully powered wing.
+
+## 5. Decision-Making and Resource Constraints
+
+The system models decision-making as a multi-objective optimization problem. 
+- **Objective 1**: Maximize patient survivability.
+- **Objective 2**: Minimize infrastructure degradation.
+- **Constraints**: Finite staff hours, hard limits on physical space (beds), fixed consumable inventory (fuel, oxygen).
+
+When crises overlap (e.g., Heatwave causing a Grid Power Outage), the CCA escalates the severity, and the RAA aggressively prunes lower-priority resource allocations (e.g., cancelling all non-emergency procedures) to maintain the integrity of core life-saving functions.

@@ -1,0 +1,10 @@
+kafka_brokers = ["localhost:9092"]
+kafka_input_topic = "clinical.orchestration.confidence.v1"
+kafka_output_topic = "clinical.orchestration.blueprint.v1"
+kafka_dlq_topic = "system.dlq.v1"
+kafka_consumer_group = "allocation-group"
+kafka_worker_pool_size = 4
+
+redis_url = "redis://localhost:6379"
+otel_endpoint = "http://localhost:4317"
+hoa_grpc_endpoint = "http://localhost:50051"

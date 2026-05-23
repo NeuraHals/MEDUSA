@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: allocation-agent
+  namespace: medusa-orchestration
+  labels:
+    app: allocation-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: allocation-agent
+  template:
+    metadata:
+      labels:
+        app: allocation-agent
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: allocation-agent
+        image: antigravity/allocation-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8083
+          name: health
+        - containerPort: 50051
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: allocation-agent-config
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8083
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8083
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3

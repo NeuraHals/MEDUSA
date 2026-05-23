@@ -1,0 +1,35 @@
+env: development
+http:
+  addr: ":8087"
+  read_timeout: "5s"
+  write_timeout: "10s"
+kafka:
+  brokers:
+    - "kafka-broker:9093"
+  input_topic: "clinical.orchestration.execution.v1"
+  output_topic: "clinical.orchestration.approval.v1"
+  dlq_topic: "system.dlq.v1"
+  consumer_group: "mobile-group"
+  worker_count: 4
+redis:
+  url: "redis://redis-master:6379"
+otel:
+  endpoint: "otel-collector:4317"
+schema:
+  version: "1.0.0"
+hoa:
+  grpc_endpoint: "oversight-agent:50051"
+apns:
+  key_path: "/secrets/apns.p8"
+  team_id: ""
+  bundle_id: ""
+fcm:
+  server_key: ""
+twilio:
+  account_sid: ""
+  auth_token: ""
+  from_number: ""
+  base_url: "https://api.twilio.com/2010-04-01"
+offline_queue_ttl_secs: 300
+session_ttl_secs: 3600
+degraded_mode: false

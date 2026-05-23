@@ -1,0 +1,24 @@
+env: development
+http:
+  addr: ":8084"
+  read_timeout: "5s"
+  write_timeout: "10s"
+grpc:
+  addr: ":50052"
+kafka:
+  brokers:
+    - "kafka-broker:9093"
+  input_topic: "clinical.orchestration.blueprint.v1"
+  output_topic: "clinical.orchestration.execution.v1"
+  dlq_topic: "system.dlq.v1"
+  consumer_group: "orchestrator-group"
+  worker_count: 4
+redis:
+  url: "redis://redis-master:6379"
+otel:
+  endpoint: "otel-collector:4317"
+hoa:
+  grpc_endpoint: "oversight-agent:50051"
+schema:
+  version: "1.0.0"
+execution_timeout_secs: 30

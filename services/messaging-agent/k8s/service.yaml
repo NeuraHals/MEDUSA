@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: messaging-agent
+  namespace: medusa-orchestration
+  labels:
+    app: messaging-agent
+spec:
+  selector:
+    app: messaging-agent
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8086
+    targetPort: 8086
+  type: ClusterIP

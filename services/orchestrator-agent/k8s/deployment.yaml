@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator-agent
+  namespace: medusa-execution
+  labels:
+    app: orchestrator-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: orchestrator-agent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: orchestrator-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: orchestrator-agent
+        image: antigravity/orchestrator-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8084
+          name: http
+        - containerPort: 50052
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: orchestrator-agent-config
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8084
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8084
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3

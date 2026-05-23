@@ -1,0 +1,22 @@
+version: v2
+plugins:
+  # Go protobuf structs
+  - plugin: buf.build/protocolbuffers/go
+    out: api/gen/go
+    opt: paths=source_relative
+
+  # Go gRPC server/client stubs
+  - plugin: buf.build/grpc/go
+    out: api/gen/go
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false
+
+  # gRPC-Gateway HTTP/JSON transcoding
+  - plugin: buf.build/grpc-ecosystem/gateway
+    out: api/gen/go
+    opt: paths=source_relative
+
+  # OpenAPI v2 docs
+  - plugin: buf.build/grpc-ecosystem/openapiv2
+    out: api/gen/openapi

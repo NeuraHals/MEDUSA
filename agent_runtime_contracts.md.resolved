@@ -1,0 +1,97 @@
+# Agent Runtime Contracts & Service Interfaces
+
+This document outlines the technical execution contracts, concurrency models, and network boundaries for the 11 agents in the orchestration platform.
+
+## 1. Runtime Execution Models
+
+### Service Boundaries & Worker Models
+All agents are deployed as isolated Kubernetes Deployments utilizing a **Sidecar Pattern**.
+*   **Core Logic Container:** Go/Rust-based high-throughput processing engine.
+*   **Sidecar (Envoy/Dapr):** Handles mTLS termination, gRPC routing, Kafka consumer offset tracking, and localized circuit breaking.
+
+### Thread/Concurrency Behavior
+*   **I/O Bound Agents (SIA, SMA, MIA):** Asynchronous event loops (e.g., Node.js / Rust Tokio). Scales horizontally based on Kafka consumer lag.
+*   **Compute Bound Agents (RAA, SIPA, CCA):** Multi-threaded worker pools mapped tightly to physical CPU cores. SIPA runs on specialized GPU-enabled node pools for Monte Carlo parallelism.
+
+---
+
+## 2. Agent Service Specifications
+
+*   **Inputs:** gRPC streams or Kafka Topics.
+*   **Outputs:** gRPC streams or Kafka Topics.
+*   **State Ownership:** Agents maintain ephemeral state locally (in-memory structs) and write persistent ground-truth to the Redis Shared State Graph.
+*   **Retry Policies:** Exponential backoff (max 3 retries) for internal gRPC; Infinite retry for DLQ Kafka messages.
+*   **Timeout Behavior:** Strict latency budgets (defined below). If an agent exceeds its budget, the Sidecar injects a gRPC `DEADLINE_EXCEEDED` error, triggering degraded-mode failover.
+
+---
+
+## 3. Inter-Agent API Contracts
+
+### Internal gRPC Interfaces
+Synchronous communication (bypassing Kafka) is explicitly restricted to Tier 2 Approval paths to ensure ultra-low latency.
+*   **`HOA_Service.RequestApproval` (AOA $\rightarrow$ HOA)**
+    *   *Payload:* `AllocationBlueprint`
+    *   *Response:* `Token` (Synchronous wait up to 60s).
+*   **`MIA_Service.PromptDevice` (HOA $\rightarrow$ MIA)**
+    *   *Payload:* `PromptPayload`
+    *   *Response:* `BiometricSignature` (Stream).
+
+### Internal Auth Requirements
+*   **SPIFFE/SPIRE:** All agent-to-agent and agent-to-Kafka communication requires Mutual TLS (mTLS). Each agent pod is issued a short-lived x509 SVID (SPIFFE Verifiable Identity Document).
+*   **Zero-Trust Execution:** The AOA validates the cryptographic signature of the HOA `ApprovalToken` before executing any API calls. If the token lacks the correct SPIFFE ID signature, execution throws a fatal error.
+
+---
+
+## 4. Heartbeats, Health Checks & Failover
+
+*   **Service Discovery:** Managed via Consul / Kubernetes core DNS.
+*   **Health-Check Standards:** Every agent exposes a `/healthz` HTTP endpoint.
+    *   *Liveness Probe:* Validates the binary is running.
+    *   *Readiness Probe:* Validates connection to Kafka/Redis.
+*   **Crash Recovery Patterns:**
+    *   If a stateless agent (SIA) crashes, K8s spins a replacement in <2s; Kafka consumer group rebalances automatically.
+    *   If a stateful agent (RAA) crashes, the new pod reconstitutes its capacity matrix by querying the Redis Graph DB on boot (`MATCH (b:ICUBed) RETURN b`).
+
+---
+
+## 5. Execution State Machines & Timing Budgets
+
+### Autonomous Execution Pipeline (Timing Budgets)
+To achieve millisecond crisis response, strict timing limits are enforced per agent step:
+1.  **SIA (Ingestion):** < 50ms.
+2.  **CCA (Correlation):** < 200ms.
+3.  **C&CA (Confidence Check):** < 100ms.
+4.  **RAA (Optimization):** < 800ms.
+5.  **AOA (Execution):** < 200ms.
+*Total Autonomous Latency Target: < 1.35 seconds.*
+
+### Tier 2 Pause/Resume & Glass Break Timing
+```mermaid
+stateDiagram-v2
+    [*] --> Autonomous_Pipeline
+    Autonomous_Pipeline --> Tier_2_Gated : High PRI Action Detected
+    
+    state Tier_2_Gated {
+        [*] --> HOA_Requests_Approval
+        HOA_Requests_Approval --> MIA_Delivers_Push
+        MIA_Delivers_Push --> Waiting_For_Human : Start 60s Timer
+        
+        Waiting_For_Human --> Human_Approves : Biometric OK
+        Waiting_For_Human --> Human_Denies : Rejected
+        Waiting_For_Human --> Glass_Break_Triggered : 60s Timeout Reached
+    }
+    
+    Human_Approves --> AOA_Executes
+    Glass_Break_Triggered --> AOA_Executes : (Audit Flag Logged)
+    Human_Denies --> RAA_Recalculates
+    
+    AOA_Executes --> [*]
+    RAA_Recalculates --> [*]
+```
+
+### Rollback Sequencing
+Rollbacks are treated as net-new orchestration events.
+1.  **R&AA** detects failure (e.g., HVAC API returns 503).
+2.  **R&AA** generates a `RollbackManifest` and publishes to Orchestration Bus.
+3.  **AOA** consumes the `RollbackManifest` and reverses the API calls in LIFO (Last-In-First-Out) order.
+4.  If a rollback fails, **SMA** triggers a critical page to physical facilities engineers.

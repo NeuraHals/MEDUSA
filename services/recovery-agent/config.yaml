@@ -1,0 +1,25 @@
+env: development
+http:
+  addr: ":8089"
+  read_timeout: "5s"
+  write_timeout: "10s"
+kafka:
+  brokers:
+    - "kafka-broker:9093"
+  input_topic: "clinical.orchestration.rollback.v1"
+  output_topic: "clinical.orchestration.recovery.v1"
+  dlq_topic: "system.dlq.v1"
+  consumer_group: "recovery-group"
+  worker_count: 4
+redis:
+  url: "redis://redis-master:6379"
+otel:
+  endpoint: "otel-collector:4317"
+schema:
+  version: "1.0.0"
+max_retries: 3
+undo_timeout_secs: 15
+degraded_mode: false
+cb:
+  failure_threshold: 5
+  recovery_secs: 30

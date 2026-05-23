@@ -1,0 +1,13 @@
+env: development
+http:
+  addr: ":8080"
+  read_timeout: 5s
+  write_timeout: 10s
+kafka:
+  brokers:
+    - "kafka-broker:9093"
+  topic: "external.telemetry.v1"
+otel:
+  endpoint: "otel-collector:4317"
+schema:
+  version: "1.0.0"

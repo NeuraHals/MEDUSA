@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package antigravity.execution.v1;
+
+option go_package = "github.com/antigravity/mono/api/gen/go/execution/v1;executionv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ExecutionService coordinates blueprint execution dispatching from the AOA.
+service ExecutionService {
+  // DispatchBlueprint sends an approved allocation blueprint for execution.
+  rpc DispatchBlueprint(BlueprintDispatch) returns (DispatchResponse);
+  // GetExecutionState queries the current execution state of a blueprint.
+  rpc GetExecutionState(ExecutionStateRequest) returns (ExecutionStateResponse);
+}
+
+message BlueprintDispatch {
+  string blueprint_id   = 1;
+  string crisis_id      = 2;
+  string hospital_id    = 3;
+  string trace_id       = 4;
+  string idempotency_key = 5;
+  repeated Action actions = 6;
+  google.protobuf.Timestamp dispatched_at = 7;
+}
+
+message Action {
+  string action_id     = 1;
+  string resource_id   = 2;
+  string resource_type = 3;
+  string target_api    = 4;
+  int32  priority      = 5;
+  repeated string depends_on = 6;
+}
+
+message DispatchResponse {
+  string blueprint_id = 1;
+  string state        = 2;
+  string trace_id     = 3;
+}
+
+message ExecutionStateRequest {
+  string blueprint_id = 1;
+  string trace_id     = 2;
+}
+
+message ExecutionStateResponse {
+  string blueprint_id = 1;
+  string state        = 2;
+  repeated ActionResult results = 3;
+}
+
+message ActionResult {
+  string action_id  = 1;
+  bool   success    = 2;
+  string error_code = 3;
+  int32  attempts   = 4;
+}

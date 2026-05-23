@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: oversight-agent
+  namespace: medusa-orchestration
+  labels:
+    app: oversight-agent
+spec:
+  selector:
+    app: oversight-agent
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8085
+    targetPort: 8085
+  - name: grpc
+    protocol: TCP
+    port: 50051
+    targetPort: 50051
+  type: ClusterIP

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recovery-agent
+  namespace: medusa-execution
+  labels:
+    app: recovery-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: recovery-agent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: recovery-agent
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: recovery-agent
+        image: antigravity/recovery-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8089
+          name: http
+        envFrom:
+        - configMapRef:
+            name: recovery-agent-config
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8089
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8089
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3

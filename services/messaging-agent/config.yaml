@@ -1,0 +1,38 @@
+env: development
+http:
+  addr: ":8086"
+  read_timeout: "5s"
+  write_timeout: "10s"
+kafka:
+  brokers:
+    - "kafka-broker:9093"
+  input_topic: "clinical.orchestration.execution.v1"
+  output_topic: "clinical.orchestration.notification.v1"
+  dlq_topic: "system.dlq.v1"
+  consumer_group: "messaging-group"
+  worker_count: 8
+redis:
+  url: "redis://redis-master:6379"
+otel:
+  endpoint: "otel-collector:4317"
+schema:
+  version: "1.0.0"
+pagerduty:
+  api_key: ""
+  base_url: "https://events.pagerduty.com/v2/enqueue"
+twilio:
+  account_sid: ""
+  auth_token: ""
+  from_number: ""
+  base_url: "https://api.twilio.com/2010-04-01"
+apns:
+  key_path: "/secrets/apns.p8"
+  team_id: ""
+  bundle_id: ""
+fcm:
+  server_key: ""
+cb:
+  failure_threshold: 5
+  recovery_seconds: 30
+max_retries: 3
+degraded_mode: false

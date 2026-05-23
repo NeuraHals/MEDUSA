@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mobile-interaction
+  namespace: medusa-orchestration
+spec:
+  selector:
+    app: mobile-interaction
+  ports:
+  - name: http
+    port: 8087
+    targetPort: 8087
+  type: ClusterIP

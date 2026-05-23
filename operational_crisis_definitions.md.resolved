@@ -1,0 +1,130 @@
+# Autonomous Operational Crisis Definitions (v2.0 - Orchestration Ready)
+
+These refined definitions shift from human-readable summaries to machine-actionable orchestration logic. They outline the telemetry protocols, threshold-based rules engines, automated execution playbooks, and JSON-like event schemas required by the autonomous system to execute operations without human intervention.
+
+---
+
+## 1. Ransomware Attack on Hospital Infrastructure
+
+### A. Ingestion Telemetry & Schemas
+*   **Protocols:** Syslog, NetFlow, SNMP, EDR API Webhooks (CrowdStrike/SentinelOne).
+*   **Event Payload Example (SIA):**
+    ```json
+    {
+      "event_type": "mass_file_modification",
+      "source": "CrowdStrike_Falcon",
+      "severity": "CRITICAL",
+      "metrics": { "encryption_rate_mbps": 450, "entropy_score": 0.98 },
+      "affected_assets": ["ehr_db_cluster_01", "pacs_archive_04"],
+      "timestamp": "2026-05-16T15:20:00Z"
+    }
+    ```
+
+### B. Correlation Logic (CCA)
+*   **Trigger Rule:** `IF (entropy_score > 0.90 ON ehr_db_cluster_01) AND (failed_auth_attempts > 500 IN 60s)`
+*   **Escalation:** Transition state to `DEFCON_1_CYBER`.
+*   **Resource Lock:** Immediately reserve 100% of available Tier-1 CIRT (Cyber Incident Response Team) personnel.
+
+### C. Automated Execution Playbook (AOA)
+1.  **Network Isolation:** `POST /api/sdn/policies/isolate` `{"target_vlans": ["VLAN_EHR", "VLAN_PACS"], "strict": true}`
+2.  **Service Suspension:** `systemctl stop hl7-interface-engine` across all integration nodes to sever interoperability bridges and prevent lateral data corruption.
+3.  **Authentication Freeze:** Lock all Active Directory accounts with `Domain Admin` privileges originating from external VPN IP pools.
+
+### D. Adaptation & Recovery Loop (RA)
+*   **Failure Condition:** `IF /api/sdn/policies/isolate RETURNS HTTP 503` (indicating the Software Defined Networking controller itself is compromised).
+*   **Fallback Action:** Dispatch PagerDuty alert to physical security: `CRITICAL: Execute physical power-down of switch racks in Data Center A, Row 4`.
+*   **Recovery Indicator:** `telemetry.lateral_movement_events == 0` AND `endpoint_agent_heartbeats == NORMAL` for `3600s`.
+
+---
+
+## 2. Hospital Power Outage
+
+### A. Ingestion Telemetry & Schemas
+*   **Protocols:** SCADA/Modbus (Generators), BACnet (HVAC), SNMP (UPS Arrays).
+*   **Event Payload Example (SIA):**
+    ```json
+    {
+      "event_type": "mains_power_loss",
+      "source": "ATS_Controller_NorthWing",
+      "metrics": { "mains_voltage": 0.0, "ups_load_pct": 88, "generator_status": "STARTING" },
+      "timestamp": "2026-05-16T15:21:00Z"
+    }
+    ```
+
+### B. Correlation Logic (CCA)
+*   **Trigger Rule:** `IF (mains_voltage == 0.0) AND (generator_status == "FAILED_TO_START" OR generator_fuel_pct < 15)`
+*   **Escalation:** Transition state to `INFRA_CRITICAL_POWER`.
+*   **Resource Mapping:** Query EHR / Bed Management for `patients.life_support == true` located in `zone == NorthWing`.
+
+### C. Automated Execution Playbook (AOA)
+1.  **Load Shedding:** `POST /api/bms/hvac/zones/admin_wing` `{"mode": "OFF"}` to aggressively conserve UPS and remaining generator load.
+2.  **Elevator Grounding:** Command elevator controllers to drop to floor 1 and lock doors open (preventing mid-shaft entrapment during battery drain).
+3.  **Supply Chain Automation:** Dispatch automated API call to contracted fuel supplier: `Emergency Diesel Delivery required to coordinates [X, Y] within 120m`.
+
+### D. Adaptation & Recovery Loop (RA)
+*   **Failure Condition:** `IF generator_fuel_delivery_eta > (current_fuel_pct / burn_rate)`.
+*   **Fallback Action:** Trigger partial facility evacuation protocol via overhead PA API; update regional EMS CAD to reroute all inbound ambulances to sister facilities.
+*   **Recovery Indicator:** `mains_voltage >= 110.0` for `1800s` AND `ats_state == "UTILITY_SYNCED"`.
+
+---
+
+## 3. Heatwave-Driven Patient Overflow
+
+### A. Ingestion Telemetry & Schemas
+*   **Protocols:** HL7 ADT (Admission, Discharge, Transfer), CAP (Common Alerting Protocol), JSON/REST (Weather APIs).
+*   **Event Payload Example (SIA):**
+    ```json
+    {
+      "event_type": "capacity_threshold_exceeded",
+      "source": "EHR_Bed_Management",
+      "metrics": { "er_wait_time_mins": 315, "er_holding_patients": 42, "ambient_temp_c": 39 },
+      "timestamp": "2026-05-16T15:22:00Z"
+    }
+    ```
+
+### B. Correlation Logic (CCA)
+*   **Trigger Rule:** `IF (ambient_temp_c > 35) AND (er_holding_patients > 20) AND (available_icu_beds == 0)`
+*   **Escalation:** Transition state to `CAPACITY_OVERFLOW_HEAT`.
+*   **Resource Lock:** Execute script to halt all elective surgeries to instantly free up post-op recovery beds and PACU nurses.
+
+### C. Automated Execution Playbook (AOA)
+1.  **HVAC Optimization:** `PUT /api/bms/hvac/zones/er_waiting` `{"setpoint_c": 18, "fan_speed": "MAX"}`.
+2.  **Staffing Surge:** `POST /api/workforce/shift-callout` `{"role": "RN_Emergency", "incentive_multiplier": 2.5, "needed": 15}` via SMS/app push notifications.
+3.  **EMS Diversion:** Update regional EMS dispatch API: `{"status": "DIVERSION", "reason": "CAPACITY", "ttl_hours": 4}`.
+
+### D. Adaptation & Recovery Loop (RA)
+*   **Failure Condition:** `IF HVAC_zone_er_waiting.status == "THERMAL_OVERLOAD"` (cooling units failing due to extreme outdoor heat).
+*   **Fallback Action:** Dispatch physical hospital logistics robots to deliver portable cooling units, industrial fans, and ice stations from inventory to the ER waiting room.
+*   **Recovery Indicator:** `er_wait_time_mins < 120` AND `available_icu_beds > 5` AND `ambient_temp_c < 30`.
+
+---
+
+## 4. Flooded Ambulance Routes During Heavy Rainfall
+
+### A. Ingestion Telemetry & Schemas
+*   **Protocols:** NMEA 0183 (Ambulance GPS telemetry), GeoJSON (Municipal Flood Mapping API), Waze/Google Traffic API.
+*   **Event Payload Example (SIA):**
+    ```json
+    {
+      "event_type": "route_artery_failure",
+      "source": "Municipal_Flood_Sensor_Network",
+      "metrics": { "water_depth_mm": 450, "flow_rate_m3s": 12 },
+      "location": { "lat": 40.7128, "lon": -74.0060, "road_segment_id": "I-95_Underpass" },
+      "timestamp": "2026-05-16T15:23:00Z"
+    }
+    ```
+
+### B. Correlation Logic (CCA)
+*   **Trigger Rule:** `IF (water_depth_mm > 300 ON primary_route) AND (ambulance.speed_kph == 0 FOR 300s)`
+*   **Escalation:** Transition state to `LOGISTICS_ARTERY_SEVERED`.
+*   **Resource Mapping:** Query aeromedical API for availability (`IF heli_status == "AVAILABLE" AND wind_speed_kts < 40`).
+
+### C. Automated Execution Playbook (AOA)
+1.  **Dynamic Rerouting:** Push updated GeoJSON route polygons to all active EMS navigation tablets in the field, applying a `cost_multiplier: 9999` to flooded segments to force recalculation.
+2.  **Aeromedical Dispatch:** `POST /api/flight-ops/dispatch` `{"target_coords": [lat, lon], "patient_acuity": "CRITICAL"}` for patients stranded by water.
+3.  **Trauma Bay Reallocation:** Delay trauma team activation for stranded units; reassign trauma bays to internal coding patients or walk-ins.
+
+### D. Adaptation & Recovery Loop (RA)
+*   **Failure Condition:** `IF /api/flight-ops/dispatch RETURNS "WEATHER_GROUNDED"` (helicopters cannot fly due to heavy rain/wind).
+*   **Fallback Action:** Broadcast high-water rescue request to local Fire Department / National Guard via Computer Aided Dispatch (CAD) API integration.
+*   **Recovery Indicator:** `route_artery.water_depth_mm < 100` AND `ambulance.eta_variance_mins < 10`.

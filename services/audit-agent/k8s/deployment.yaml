@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-agent
+  namespace: medusa-audit
+  labels:
+    app: audit-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: audit-agent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: audit-agent
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      serviceAccountName: audit-agent-sa  # needs S3 IRSA permissions
+      containers:
+      - name: audit-agent
+        image: antigravity/audit-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8088
+          name: http
+        envFrom:
+        - configMapRef:
+            name: audit-agent-config
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8088
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8088
+          initialDelaySeconds: 20
+          periodSeconds: 20
+          failureThreshold: 3

@@ -1,0 +1,20 @@
+env: development
+http:
+  addr: ":8085"
+  read_timeout: "5s"
+  write_timeout: "10s"
+grpc:
+  addr: ":50051"
+redis:
+  url: "redis://redis-master:6379"
+kafka:
+  brokers:
+    - "kafka-broker:9093"
+  output_topic: "clinical.orchestration.approval.v1"
+  dlq_topic: "system.dlq.v1"
+otel:
+  endpoint: "otel-collector:4317"
+schema:
+  version: "1.0.0"
+approval_timeout_secs: 60
+degraded_mode: false

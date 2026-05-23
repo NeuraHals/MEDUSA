@@ -1,0 +1,69 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mobile-interaction-netpol
+  namespace: medusa-orchestration
+spec:
+  podSelector:
+    matchLabels:
+      app: mobile-interaction
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Accept HTTPS from ingress controller (mobile app traffic)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8087
+  # Accept from other orchestration services
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: medusa-orchestration
+    ports:
+    - protocol: TCP
+      port: 8087
+  egress:
+  # HOA gRPC
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: medusa-orchestration
+      podSelector:
+        matchLabels:
+          app: oversight-agent
+    ports:
+    - protocol: TCP
+      port: 50051
+  # Kafka
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kafka-cluster
+    ports:
+    - protocol: TCP
+      port: 9093
+  # Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # OTel
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 4317
+  # External: APNs, FCM, Twilio (HTTPS)
+  - ports:
+    - protocol: TCP
+      port: 443

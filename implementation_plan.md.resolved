@@ -1,0 +1,78 @@
+# Goal Description
+
+Provide a master operational blueprint and systems architecture specification for the multi-agent Healthcare Crisis Intelligence & Response Orchestrator. This document synthesizes all previously established operational definitions, signal processing models, and autonomous workflows into a unified implementation plan.
+
+## User Review Required
+> [!IMPORTANT]
+> This master blueprint dictates the overall architecture for the Antigravity orchestration platform. Review the assumptions and limitations closely to ensure operational safety boundaries are accurately modeled before proceeding to agent implementation.
+
+## Proposed Changes
+
+### 1. Crisis Ecosystem Overview
+The orchestrator operates as a constellation of specialized autonomous agents acting as a virtual Emergency Operations Center (EOC). The platform continuously executes an Observe-Orient-Decide-Act (OODA) loop across four primary interconnected crisis vectors:
+- **Cybersecurity:** Ransomware / Lateral Network Movement
+- **Infrastructure:** Grid Power Failures
+- **Capacity:** Heatwave / Mass Casualty Overload
+- **Logistics:** Flooded Ambulance Routes
+
+### 2. Signal Relationships & Multi-Signal Ingestion
+The **Signal Ingestion Agent (SIA)** normalizes heterogeneous data streams into structured JSON events:
+- **Internal Ground-Truth:** EHR Bed Management (ADT), SCADA/ATS Power Sensors, IT/Syslog (High Reliability: 0.95-0.99).
+- **External Predictive:** NWS Weather APIs, Threat Intelligence (STIX/TAXII), Waze Traffic (Medium Reliability: 0.65-0.85).
+- **Temporal/Spatial:** Ambulance NMEA 0183 GPS streams, Mobile App Staff Emergency Reports.
+- **Correlation:** The **Correlation & Classification Agent (CCA)** fuses these disparate signals to generate a high-level crisis classification and severity score.
+
+### 3. Cascading Failure Pathways
+The system anticipates deterministic failure trees:
+- **Cyber-to-Capacity:** Ransomware encrypts EHR $\rightarrow$ Clinical downtime slows intake $\rightarrow$ ER gridlock triggers mass diversion $\rightarrow$ Pre-hospital mortality increases.
+- **Weather-to-Infrastructure:** Heatwave spikes regional grid demand $\rightarrow$ Rolling blackout transfers hospital to generators $\rightarrow$ Generators overheat due to sustained 100% HVAC load $\rightarrow$ Total facility blackout.
+
+### 4. Resource Competition Scenarios
+The **Resource Allocation Agent (RAA)** manages finite physical and digital assets (Ambulances, ICU Beds, Generators, Clean Servers, Trauma Teams).
+- **Dynamic Trade-off Reasoning:** Uses Patient Risk Impact (PRI) and Opportunity Cost algorithms to optimize distribution.
+- **Simultaneous Conflict:** If a Heatwave (cooling demand) and Grid Failure (generator reliance) intersect, the RAA executes *Partial Degradation*. It disables administrative HVAC to preserve generator fuel (TTL) while prioritizing ICU life support and ER triage tents powered by isolated portable units.
+
+### 5. Operational Dependencies
+The platform models strict dependency chains necessary for recovery:
+- **Cyber Recovery** strictly depends on physical power, offline immutable backups, and out-of-band communication networks.
+- **Ambulance Rerouting** strictly depends on viable Traffic APIs, functional CAD bridges, and intact road surfaces (or aeromedical alternatives).
+
+### 6. Autonomous Action Hierarchy
+The **Action Orchestrator Agent (AOA)** executes playbooks governed by a rigid Human-in-the-Loop (HITL) model:
+- **Tier 1 (Autonomous Execute):** High-confidence logistics. Rerouting ambulances, isolating non-clinical VLANs, dispatching B2B fuel requests.
+- **Tier 2 (Human-Gated):** Clinical disruption. Halting elective surgeries, isolating the EHR database. Requires executive confirmation.
+- **"Glass Break" Override:** If a Tier 2 human authority is unreachable and PRI crosses the critical threshold (e.g., imminent EHR destruction), the system autonomously overrides and executes to preserve life/data.
+- **Hard Constraints:** The system is mathematically forbidden from altering medication dosage, life-support power, or physical egress routes.
+
+### 7. Recovery & Adaptation Logic
+The system self-heals in degraded environments:
+- **API Failures:** Falls back to dead-reckoning or static historical models (e.g., estimating GPS via last known velocity).
+- **Conflicting Signals:** Assumes the *Most Conservative Stance* (e.g., if flood sensor says clear but traffic API says closed, assumes closed until human visual verification).
+- **False Positives:** If an anomaly (encryption) matches an authorized schedule (backup), it suppresses execution and notifies the SOC.
+
+### 8. Stakeholder Coordination Model
+The system acts as an intelligent communication switchboard:
+- **Clinical Staff:** Action-oriented, detailed directives (e.g., "Shift to paper charting").
+- **Patients/Public:** Reassuring, anxiety-dampening safety instructions.
+- **Utility/EMS:** Purely data-driven B2B API payloads (e.g., exact fuel burn rates, bed deficits).
+- **Panic Minimization:** The system autonomously retracts false alarms using specific "Stand Down" terminology to differentiate from actual crisis resolution.
+
+### 9. Confidence and Verification Framework
+The Bayesian-inspired logic layer uses threshold gating:
+- **Uncertainty Propagation:** Low confidence (e.g., 65%) scales down the aggressiveness of actions. The AOA may throttle ports instead of severing entire networks.
+- **Stale Telemetry Decay:** If sensors lock up, the confidence score decays exponentially over time, preventing runaway hallucinatory decision-making based on outdated ground-truth.
+
+### 10. Assumptions and Limitations
+- **Assumption:** Human Incident Commanders have ultimate authority and can trigger an emergency kill-switch to halt all AOA activity.
+- **Assumption:** API partners (Waze, NWS, ServiceNow) maintain 99.9% uptime, though degraded mode logic exists.
+- **Limitation:** The platform cannot currently predict irrational human panic behaviors (e.g., staff abandoning posts or patients self-evacuating).
+- **Limitation:** Autonomous cyber isolation assumes the Software-Defined Networking (SDN) controller itself has not been compromised by the threat actor.
+
+## Verification Plan
+### Automated Tests
+- Simulate localized API failures and verify CCA falls back to exponential decay and dead-reckoning models.
+- Inject conflicting signals (Clear vs. Closed) and verify AOA adopts the highest-safety conservative routing stance.
+
+### Manual Verification
+- Execute tabletop exercises with human Incident Commanders to test the "Glass Break" 60-second override mechanism, verifying audit logs correctly capture the autonomous override.
+- Test rollback authorization logic ensuring only Incident Command can revert Tier 2 actions.

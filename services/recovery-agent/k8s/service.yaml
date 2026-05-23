@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: recovery-agent
+  namespace: medusa-execution
+spec:
+  selector:
+    app: recovery-agent
+  ports:
+  - name: http
+    port: 8089
+    targetPort: 8089
+  type: ClusterIP

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingestion-agent
+  namespace: medusa-ingestion
+  labels:
+    app: ingestion-agent
+spec:
+  selector:
+    app: ingestion-agent
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  - name: metrics
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP

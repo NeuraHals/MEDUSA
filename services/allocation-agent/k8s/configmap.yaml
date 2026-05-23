@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: allocation-agent-config
+  namespace: medusa-orchestration
+data:
+  ENV: "production"
+  HEALTH_ADDR: "0.0.0.0:8083"
+  KAFKA__BROKERS: "kafka-broker.kafka-cluster:9093"
+  KAFKA_INPUT_TOPIC: "clinical.orchestration.confidence.v1"
+  KAFKA_OUTPUT_TOPIC: "clinical.orchestration.blueprint.v1"
+  KAFKA_DLQ_TOPIC: "system.dlq.v1"
+  KAFKA_CONSUMER_GROUP: "allocation-group"
+  KAFKA_WORKER_POOL_SIZE: "4"
+  REDIS_URL: "redis://redis-master.redis:6379"
+  OTEL_ENDPOINT: "http://otel-collector.observability:4317"
+  LOCK_TTL_MS: "5000"
+  MAX_GRAPH_DEPTH: "5"
+  ACTION_CONFIDENCE_THRESHOLD: "0.72"
+  HOA_GRPC_ENDPOINT: "http://oversight-agent.medusa-orchestration:50051"
+  APPROVAL_TIMEOUT_SECS: "60"
+  SCHEMA_VERSION: "1.0.0"

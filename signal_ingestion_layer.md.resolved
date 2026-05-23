@@ -1,0 +1,75 @@
+# Multi-Signal Ingestion Layer
+
+This document defines the data ingestion pipeline for the Signal Ingestion Agent (SIA), standardizing heterogeneous data streams into a unified event schema for autonomous crisis detection.
+
+## 1. Hospital Server Logs
+*   **Signal Type:** IT/Network Telemetry (Syslog, NetFlow, AD Auth).
+*   **Update Frequency:** Real-time (Streaming).
+*   **Confidence Level:** High (Internal, Ground-Truth).
+*   **Reliability Score:** 0.95
+*   **Possible Noise/Conflicts:** Authorized IT maintenance, backup synchronization scripts, false-positive vulnerability scans.
+*   **Normalization Schema:** `{"source_ip", "dest_ip", "port", "event_type", "user_id", "entropy_score"}`.
+*   **Crisis Relevance:** Primary indicator for Ransomware and Cyberattacks.
+
+## 2. Weather Alerts
+*   **Signal Type:** External API Webhooks (NWS CAP - Common Alerting Protocol).
+*   **Update Frequency:** Event-driven (Push) or 15-minute polling.
+*   **Confidence Level:** Medium (Predictive).
+*   **Reliability Score:** 0.70
+*   **Possible Noise/Conflicts:** Broad regional alerts that do not materialize into localized micro-climate impacts.
+*   **Normalization Schema:** `{"alert_type", "severity", "onset_time", "expiration_time", "affected_geo_polygon"}`.
+*   **Crisis Relevance:** Predictive indicator for Heatwave Patient Overload and Flooded Ambulance Routes.
+
+## 3. Traffic Congestion APIs
+*   **Signal Type:** External API (Waze/Google Maps GeoJSON).
+*   **Update Frequency:** 1-minute polling.
+*   **Confidence Level:** Medium-High.
+*   **Reliability Score:** 0.85
+*   **Possible Noise/Conflicts:** Construction delays or minor accidents misclassified as flood-related closures.
+*   **Normalization Schema:** `{"road_segment_id", "status", "avg_speed_kph", "closure_reason", "timestamp"}`.
+*   **Crisis Relevance:** Secondary indicator for Flooded Routes; critical for logistics rerouting.
+
+## 4. Ambulance GPS Streams
+*   **Signal Type:** Vehicle Telemetry (NMEA 0183 over Cellular).
+*   **Update Frequency:** High-frequency (Every 5-10 seconds).
+*   **Confidence Level:** High (Ground-Truth).
+*   **Reliability Score:** 0.80
+*   **Possible Noise/Conflicts:** Stale pings due to cellular dead-zones (e.g., underpasses, dense urban canyons) masquerading as stalled vehicles.
+*   **Normalization Schema:** `{"unit_id", "lat", "lon", "speed_kph", "heading", "last_ping_ms"}`.
+*   **Crisis Relevance:** Primary indicator for Flooded Routes; logistics tracking for Heatwave surge.
+
+## 5. ICU Occupancy Reports
+*   **Signal Type:** Internal EHR / Bed Management API.
+*   **Update Frequency:** Real-time (HL7 ADT triggers).
+*   **Confidence Level:** Critical (Ground-Truth).
+*   **Reliability Score:** 0.98
+*   **Possible Noise/Conflicts:** Delayed manual discharge entries by nursing staff resulting in phantom occupancy.
+*   **Normalization Schema:** `{"unit_id", "total_beds", "occupied_beds", "pending_admissions", "pending_discharges"}`.
+*   **Crisis Relevance:** Primary indicator for Heatwave capacity constraints and resource baseline for Power Outage evacuation.
+
+## 6. Power Grid Sensors
+*   **Signal Type:** Facility IoT / SCADA (Modbus, BACnet).
+*   **Update Frequency:** Sub-second (Streaming).
+*   **Confidence Level:** Critical (Hardware Ground-Truth).
+*   **Reliability Score:** 0.99
+*   **Possible Noise/Conflicts:** Micro-fluctuations or localized tripped breakers mimicking a full utility grid failure.
+*   **Normalization Schema:** `{"sensor_id", "mains_voltage", "ups_load_pct", "ats_state", "generator_rpm"}`.
+*   **Crisis Relevance:** Primary indicator for Hospital Power Outages.
+
+## 7. Threat Intelligence Feeds
+*   **Signal Type:** External Cyber Feeds (STIX/TAXII).
+*   **Update Frequency:** Hourly polling or webhook.
+*   **Confidence Level:** Medium.
+*   **Reliability Score:** 0.65
+*   **Possible Noise/Conflicts:** Outdated Indicators of Compromise (IoCs) or generic threat warnings that do not specifically target healthcare.
+*   **Normalization Schema:** `{"ioc_type", "ioc_value", "threat_actor", "cvss_score", "report_date"}`.
+*   **Crisis Relevance:** Secondary predictive indicator/context for Ransomware classification.
+
+## 8. Staff Emergency Reports
+*   **Signal Type:** Internal Mobile App / Panic Button (JSON API).
+*   **Update Frequency:** Event-driven (Push).
+*   **Confidence Level:** Medium-High (Human subjective).
+*   **Reliability Score:** 0.75
+*   **Possible Noise/Conflicts:** Panic-driven exaggeration (e.g., reporting a "total flood" for a burst pipe).
+*   **Normalization Schema:** `{"reporter_id", "location_zone", "incident_category", "free_text", "timestamp"}`.
+*   **Crisis Relevance:** Human-in-the-loop validation for all crises; ground-truth for physical localized emergencies.

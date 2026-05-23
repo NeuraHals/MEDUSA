@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: simulation-agent-netpol
+  namespace: medusa-simulation
+spec:
+  podSelector:
+    matchLabels:
+      app: simulation-agent
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Health probes from within simulation namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: medusa-simulation
+    ports:
+    - protocol: TCP
+      port: 8090
+  egress:
+  # Kafka
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kafka-cluster
+    ports:
+    - protocol: TCP
+      port: 9093
+  # Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # OTel
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 4317

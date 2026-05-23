@@ -1,0 +1,37 @@
+[package]
+name = "allocation-agent"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "allocation-agent"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true }
+rdkafka = { workspace = true }
+redis = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+config = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+dashmap = { workspace = true }
+async-channel = { workspace = true }
+axum = { workspace = true }
+tonic = { workspace = true }
+prost = { workspace = true }
+rand = { workspace = true }
+
+[build-dependencies]
+tonic-build = "0.11"
+protoc-bin-vendored = "3"
+

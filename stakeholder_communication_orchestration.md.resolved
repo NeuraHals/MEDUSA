@@ -1,0 +1,66 @@
+# Stakeholder Communication Orchestration
+
+This document outlines the autonomous communication architecture for the Action Orchestrator Agent (AOA). The system behaves as a virtual Emergency Operations Center (EOC), dynamically tailoring the timing, tone, and technical depth of its messaging based on the stakeholder's role and the crisis state.
+
+## Core Communication Directives
+
+The AOA governs all automated communications (SMS, PA systems, API webhooks, paging networks) using the following principles:
+*   **Need-to-Know Technical Depth:** Highly technical for engineers; purely actionable for clinical staff; reassuring for patients.
+*   **Panic Minimization (Dampening):** Phrasing focuses on *what to do next* rather than the catastrophic nature of the failure.
+*   **Automated Retractions:** If the Correlation & Classification Agent (CCA) detects a false positive, the AOA immediately broadcasts a retraction using specific "Stand Down" terminology.
+
+---
+
+### 1. Doctors & Clinical Staff
+*   **Communication Priority:** 1 (Critical Internal Operations)
+*   **Escalation Timing:** Immediate (T+0m) for staff within the affected zone; Delayed (T+15m) for unaffected wings to prevent hospital-wide distraction.
+*   **Operational Detail Level:** High (Specific patient impacts, equipment availability, protocol shifts).
+*   **Panic Minimization Strategy:** Suppress catastrophic system details (e.g., "Active Ransomware Lateral Movement"); instead, focus entirely on actionable directives (e.g., "Initiate Paper Charting").
+*   **Recovery Messaging:** "All systems cleared. Please sync downtime paper charts with the EHR before end of shift."
+*   **False Alarm Retraction:** "Stand Down: Code Red network alert was a false positive triggered by scheduled IT testing. Resume normal charting."
+*   **Example (Power Outage):** *"ICU Staff: Utility power lost. Backup generators active. Ventilator battery life nominal. Defer non-critical portable imaging."*
+
+### 2. Patients & Visitors
+*   **Communication Priority:** 3 (Safety and Anxiety Management)
+*   **Escalation Timing:** Delayed (T+10m) to allow clinical staff to secure the area, unless immediate physical evacuation is required.
+*   **Operational Detail Level:** Extremely Low. Focus strictly on safety and compliance.
+*   **Panic Minimization Strategy:** Use an authoritative, calm tone. Avoid technical jargon. Reassure that backup systems are actively protecting patient care.
+*   **Recovery Messaging:** "The facility issue has been resolved. Normal hospital operations have resumed. Thank you for your patience."
+*   **False Alarm Retraction:** "Attention: The previous alert was issued in error. There is no emergency. Please disregard."
+*   **Example (Ransomware/Downtime):** *"Attention: We are experiencing a temporary computer network delay. All patient care monitors and life support systems are fully functional. Wait times may be slightly longer."*
+
+### 3. Emergency Dispatch Systems (EMS/911 CAD)
+*   **Communication Priority:** 1 (External Triage & Logistics)
+*   **Escalation Timing:** Immediate (T+0m) via automated API / CAD integration to halt inbound traffic if necessary.
+*   **Operational Detail Level:** Very High (Exact bed deficits, specific diversion reasons, estimated time to resolution).
+*   **Panic Minimization Strategy:** Purely data-driven and robotic. State constraints clearly without qualitative alarm.
+*   **Recovery Messaging:** "Diversion status lifted. Facility accepting all acuities. 12 ER beds currently available."
+*   **False Alarm Retraction:** "Cancel Diversion Request #4492. Telemetry error confirmed. Open for intake."
+*   **Example (Flooded Routes/Capacity):** *"STATUS: DIVERSION. REASON: Access routes flooded / ER at 110% capacity. ETA to resolution: 4 hours. Recommend redirecting ACUITY 1 & 2 to St. Jude Memorial."*
+
+### 4. Nearby Hospitals (Regional Load Balancing)
+*   **Communication Priority:** 2 (Resource Coordination)
+*   **Escalation Timing:** T+5m if the Resource Allocation Agent (RAA) predicts an unavoidable overflow or diversion.
+*   **Operational Detail Level:** Medium (Specific capacity requests and specialty needs).
+*   **Panic Minimization Strategy:** Professional, collaborative tone. Frame as proactive staging rather than a desperate bailout.
+*   **Recovery Messaging:** "Surge contained. Canceling pending inter-facility transfer requests."
+*   **False Alarm Retraction:** "Disregard previous capacity check. Internal systems stabilized. No transfers needed."
+*   **Example (Heatwave Surge):** *"Notice: Mercy General is operating at surge capacity due to heatwave intake. Proactively requesting status on ICU bed availability for potential transfers."*
+
+### 5. Utility Providers & Suppliers
+*   **Communication Priority:** 2 (External Infrastructure Support)
+*   **Escalation Timing:** Immediate (T+0m) upon crossing an autonomous threshold (e.g., Generator fuel < 25%).
+*   **Operational Detail Level:** Highly Technical (Load kW, burn rates, specific grid coordinates, SLA ticket routing).
+*   **Panic Minimization Strategy:** Execute via automated, SLA-driven B2B API requests (ServiceNow/Maximo) rather than frantic human phone calls.
+*   **Recovery Messaging:** "Grid power restored. Canceling emergency diesel fuel delivery."
+*   **False Alarm Retraction:** "Cancel Ticket #881. ATS sensor fault identified; fuel levels nominal."
+*   **Example (Power Outage):** *"Automated Dispatch: Emergency diesel fuel delivery required. Priority: 1 (Hospital Life Safety). Burn rate: 50 gal/hr. Remaining: 120 gal. Target Coordinates: Loading Dock B."*
+
+### 6. Public Authorities (Dept. of Health / Local Govt)
+*   **Communication Priority:** 3 (Regulatory & Public Coordination)
+*   **Escalation Timing:** T+30m or upon confirmation of a prolonged, high-severity event (e.g., Mass Casualty Incident or Major Cyberattack).
+*   **Operational Detail Level:** Executive Summary (Aggregate patient numbers, impact on community care, requests for National Guard/FEMA).
+*   **Panic Minimization Strategy:** Concise, structured SITREPs (Situation Reports). Emphasize that incident command protocols are actively managing the event.
+*   **Recovery Messaging:** "Final SITREP: Incident resolved. Normal community operations restored. After-action report to follow."
+*   **False Alarm Retraction:** "Update to Initial SITREP: Incident downgraded. False indicator identified. No public health threat."
+*   **Example (Ransomware):** *"Initial SITREP: Confirmed cyber incident impacting EHR. Patient safety systems isolated and functional. Hospital on EMS diversion. State cyber task force assistance requested."*

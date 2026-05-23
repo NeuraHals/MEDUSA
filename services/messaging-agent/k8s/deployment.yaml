@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messaging-agent
+  namespace: medusa-orchestration
+  labels:
+    app: messaging-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: messaging-agent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: messaging-agent
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: messaging-agent
+        image: antigravity/messaging-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8086
+          name: http
+        envFrom:
+        - configMapRef:
+            name: messaging-agent-config
+        - secretRef:
+            name: messaging-agent-secrets
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8086
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8086
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3

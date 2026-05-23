@@ -1,0 +1,47 @@
+# Dynamic Trade-Off Reasoning & Resource Allocation Model
+
+This document outlines the advanced decision intelligence utilized by the Resource Allocation Agent (RAA). When simultaneous crises generate competing demands for scarce resources, the RAA abandons static rule-based assignments and transitions to dynamic, multi-objective optimization.
+
+## Core Reasoning Engine
+
+*   **Patient Risk Impact (PRI) Estimation:** A dynamic score calculated for every pending action: `PRI = (Patient Acuity) × (Time to Impact) × (Probability of Occurrence)`.
+*   **Opportunity Cost Calculation:** The system constantly evaluates: `Opportunity Cost = PRI(Foregone Alternative) - PRI(Selected Action)`. The agent seeks to minimize the total aggregate opportunity cost across the hospital.
+*   **Partial Degradation Strategies:** The system avoids binary "On/Off" states. It models infrastructure as gracefully degradable (e.g., throttling bandwidth, dimming lights, or running HVAC at 40% duty cycles) to stretch scarce resources across multiple priorities.
+*   **Autonomous Explanation Generation:** Every critical trade-off executed by the AOA includes a machine-generated rationale payload logged to the Incident Commander's dashboard to ensure trust and transparency.
+
+---
+
+## Scenario 1: Allocating the Final Backup Generator
+**The Crisis:** A heatwave causes a municipal grid failure. Both the Intensive Care Unit (ICU) and the Emergency Room (ER) require power. Only the final 500kW backup generator remains operational.
+
+*   **Trade-off Reasoning:**
+    *   *ICU (Life Support)*: PRI is extreme. Time to impact is < 3 minutes (ventilator battery depletion). Mortality probability is 99%.
+    *   *ER (Triage/Cooling)*: PRI is high. Time to impact is < 2 hours (ambient temperature exceeding survival thresholds). Morbidity probability is high.
+*   **Partial Degradation Strategy:** The RAA abandons the standard "Full Power to Priority 1" protocol. It allocates 350kW to the ICU (sufficient for critical life support and telemetry, but administrative monitors and localized HVAC are shed). It allocates the remaining 150kW to the ER (powering critical intake monitors and localized industrial cooling fans, while sacrificing ambient overhead HVAC).
+*   **Explanation Generation Log:** 
+    > *"ACTION: Generator 3 split 70% ICU / 30% ER. RATIONALE: ICU priority driven by imminent sub-3-minute mortality risk of ventilator failure (PRI: 99.8). ER priority reduced to life-safety minimums. Opportunity cost of total ER blackout (heatstroke exacerbation) deemed unacceptable; partial degradation applied to both zones to maximize aggregate survivability."*
+
+---
+
+## Scenario 2: Assigning Ambulances Between Flood & Heatwave
+**The Crisis:** A localized flash flood strands patients with traumatic injuries, while a simultaneous heatwave drives mass dehydration calls. Only 3 ambulances are available in the regional pool.
+
+*   **Trade-off Reasoning:**
+    *   *Flood Zone*: High PRI. Dynamic and escalating risk (water levels rising). However, transit time is severely degraded (routing algorithms calculate a 90-minute round trip per rescue).
+    *   *Heatwave Zone*: High PRI. Static risk. Transit time is nominal (15-minute round trips).
+*   **Opportunity Cost Calculation:** Sending all 3 ambulances to the flood zone yields a maximum of 2 rescues per hour. The opportunity cost is the loss of 12 potential heatwave interventions per hour.
+*   **Strategy:** The RAA calculates the optimal throughput. It allocates 2 specialized high-clearance units to the flood zone to mitigate the most acute, rising risks. It allocates 1 standard unit exclusively to a tight geographic radius for rapid-turnaround heatwave pickups.
+*   **Explanation Generation Log:**
+    > *"ACTION: Ambulance allocation split 2:1 (Flood:Heatwave). RATIONALE: 2 units assigned to flood due to dynamic drowning risk (Rising PRI). 1 unit restricted to 2-mile radius for heatwave interventions. Opportunity cost of dispatching all units to flood terrain was calculated at 14 delayed heatwave interventions per hour. Strategy maximizes total patient intake throughput."*
+
+---
+
+## Scenario 3: Balancing Cybersecurity Isolation vs Operational Continuity
+**The Crisis:** A highly aggressive ransomware worm is detected propagating through the hospital's main network.
+
+*   **Trade-off Reasoning:**
+    *   *Cyber Isolation (Security)*: Total network severance prevents the destruction of the central EHR database (Long-term catastrophic risk; High PRI).
+    *   *Operational Continuity (Clinical)*: Maintaining network flow allows the Central Nursing Station to monitor real-time telemetry from 40 ICU beds (Short-term critical risk; High PRI).
+*   **Partial Degradation Strategy (Micro-segmentation):** Instead of executing a binary "Pull the Plug" physical isolation, the RAA orchestrates a highly complex micro-segmentation routine. It severs EHR database access, internet routing, and administrative VLANs. However, it explicitly preserves the localized Layer-2 VLAN connecting the ICU bed monitors to the Central Nursing Station.
+*   **Explanation Generation Log:**
+    > *"ACTION: Granular Network Degradation executed. Main routing severed. RATIONALE: EHR and external subnets isolated to contain ransomware propagation (Risk: Total Data Loss). ICU-to-Nursing Layer-2 VLAN preserved. Opportunity cost of full physical isolation (unmonitored sudden patient decline across 40 ICU beds) outweighed the localized risk of lateral malware movement strictly within the isolated ICU subnet."*

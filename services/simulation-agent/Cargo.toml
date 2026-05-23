@@ -1,0 +1,40 @@
+[package]
+name = "simulation-agent"
+version = "1.0.0"
+edition = "2021"
+authors = ["Antigravity Engineering <eng@antigravity.dev>"]
+description = "MEDUSA Simulation & Probabilistic Analysis Agent (SIPA)"
+
+[[bin]]
+name = "simulation-agent"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+rdkafka = { workspace = true }
+redis = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+config = { workspace = true }
+serde_yaml = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry-semantic-conventions = { workspace = true }
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+rand = { workspace = true }
+rand_distr = { workspace = true }
+dashmap = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+

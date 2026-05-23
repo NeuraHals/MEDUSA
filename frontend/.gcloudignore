@@ -1,0 +1,17 @@
+.gcloudignore
+.git
+.gitignore
+
+# Folders to ignore
+node_modules/
+.next/
+out/
+android/
+capacitor.config.json
+
+# Local env files
+.env*.local
+
+# Editor directories
+.idea/
+.vscode/

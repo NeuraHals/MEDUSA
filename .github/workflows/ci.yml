@@ -1,0 +1,119 @@
+name: MEDUSA CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # ── Protobuf validation ───────────────────────────────────────────────────
+  proto:
+    name: Protobuf Lint & Generate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.28.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - run: buf lint api/proto
+      - run: buf generate api/proto
+      - name: Assert gen output exists
+        run: test -d api/gen/go
+
+  # ── Go services ────────────────────────────────────────────────────────────
+  go-build:
+    name: Go Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - ingestion-agent
+          - orchestrator-agent
+          - oversight-agent
+          - messaging-agent
+          - mobile-interaction
+          - audit-agent
+          - recovery-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+      - name: go mod tidy
+        working-directory: services/${{ matrix.service }}
+        run: go mod tidy
+      - name: go vet
+        working-directory: services/${{ matrix.service }}
+        run: go vet ./...
+      - name: go build
+        working-directory: services/${{ matrix.service }}
+        run: go build ./...
+      - name: go test
+        working-directory: services/${{ matrix.service }}
+        run: go test -v -race -count=1 ./...
+
+  # ── Rust workspace ─────────────────────────────────────────────────────────
+  rust-build:
+    name: Rust Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Install rdkafka build deps
+        run: sudo apt-get install -y cmake libssl-dev libsasl2-dev
+      - name: cargo build
+        run: cargo build --workspace
+      - name: cargo clippy
+        run: cargo clippy --workspace -- -D warnings
+      - name: cargo test
+        run: cargo test --workspace
+
+  # ── Docker build validation ────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - ingestion-agent
+          - orchestrator-agent
+          - oversight-agent
+          - messaging-agent
+          - mobile-interaction
+          - audit-agent
+          - recovery-agent
+          - simulation-agent
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t antigravity/${{ matrix.service }}:ci services/${{ matrix.service }}
+
+  # ── K8s manifest validation ────────────────────────────────────────────────
+  k8s-validate:
+    name: Kubernetes Manifest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v3
+      - name: Validate all manifests (dry-run)
+        run: |
+          find services -name "*.yaml" -path "*/k8s/*" | while read f; do
+            echo "Validating: $f"
+            kubectl apply --dry-run=client -f "$f" 2>&1 | grep -v "^$" || true
+          done
+
+  # ── Full validation script ─────────────────────────────────────────────────
+  monorepo-validate:
+    name: Monorepo Structure Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x scripts/validate.sh && bash scripts/validate.sh

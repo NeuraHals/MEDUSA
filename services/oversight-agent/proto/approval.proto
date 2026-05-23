@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package antigravity.orchestration.v1;
+option go_package = "github.com/antigravity/mono/services/oversight-agent/internal/grpc/pb";
+
+import "google/protobuf/timestamp.proto";
+
+service ApprovalService {
+  rpc RequestApproval(ApprovalRequest) returns (ApprovalResponse);
+}
+
+message ApprovalRequest {
+  string blueprint_id = 1;
+  string action_id    = 2;
+  string target_api   = 3;
+  uint32 pri_score    = 4;
+  string trace_id     = 5;
+  string idempotency_key = 6;
+  string hospital_id  = 7;
+}
+
+message ApprovalResponse {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_APPROVED    = 1;
+    STATUS_DENIED      = 2;
+    STATUS_TIMEOUT     = 3;
+  }
+  string token_id                     = 1;
+  Status status                       = 2;
+  string approver_id                  = 3;
+  bytes  cryptographic_signature      = 4;
+  google.protobuf.Timestamp processed_at = 5;
+  string trace_id                     = 6;
+}

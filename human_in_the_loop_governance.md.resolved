@@ -1,0 +1,48 @@
+# Human Oversight & Escalation Authority Governance
+
+This document establishes the operational boundaries of the Action Orchestrator Agent (AOA). To ensure clinical safety and regulatory compliance, the system operates on a dynamic "Human-in-the-Loop" (HITL) and "Human-on-the-Loop" (HOTL) governance model. It balances the need for millisecond machine execution with the necessity of human clinical judgment.
+
+---
+
+## 1. Autonomous Execution Boundaries (Tier 1)
+These actions execute with **zero human confirmation**. The system operates autonomously to prevent delays in logistics or containment.
+*   **Conditions:** The action carries a high confidence score (>90%), involves immediate machine-to-machine infrastructure safety, or has minimal negative clinical impact.
+*   **Examples:**
+    *   Dynamically rerouting ambulances via navigation APIs based on real-time flood data.
+    *   Dispatching automated B2B API requests for emergency diesel fuel when generators fall below threshold.
+    *   Isolating non-clinical, administrative VLANs during the initial seconds of a ransomware outbreak.
+    *   Sending automated PA announcements or SMS alerts to off-duty staff for surge capacity.
+
+## 2. Human Confirmation Required (Tier 2)
+These actions are paused. The AOA formulates the plan, calculates the Patient Risk Impact (PRI), and pushes a high-priority "Approve / Deny" prompt to the designated human authority's mobile device or dashboard.
+*   **Conditions:** The action causes severe operational disruption, directly impacts patient care pathways, or the triggering telemetry has a marginal confidence score (70-89%).
+*   **Examples:**
+    *   **Halting Elective Surgeries:** Requires Chief Medical Officer (CMO) approval.
+    *   **Declaring Total EMS Diversion:** Requires ER Charge Nurse or Hospital Administrator approval.
+    *   **Isolating the Core EHR Database:** Requires Chief Information Security Officer (CISO) approval.
+    *   **Facility-Wide Power Load Shedding:** Requires Chief Engineer approval.
+
+## 3. Emergency Override Conditions ("Glass Break" Protocol)
+A failsafe mechanism designed to prevent catastrophic damage if human authorities are incapacitated, unreachable, or simply too slow to respond.
+*   **Logic:** If a Tier 2 action is pending human confirmation, a countdown timer is initiated (e.g., 60 seconds). If the timer expires without human input, the AOA evaluates the PRI. If the risk of *inaction* crosses the Critical Catastrophe Threshold, the system autonomously overrides the human requirement and executes.
+*   **Example:** A rapidly propagating ransomware worm is encrypting the network. The AOA requests CISO permission to sever the core switch. The CISO is unreachable. At T+60s, the AOA executes a "Glass Break" isolation to save the EHR backups, immediately notifying all stakeholders of the autonomous override.
+
+## 4. Hard Safety Constraints
+These are immutable mathematical guardrails. The AOA is strictly forbidden from executing these actions under *any* circumstance, regardless of confidence scores or PRI calculations.
+*   **Life Support:** The system cannot sever power to designated critical life-support zones (e.g., specific ICU bed telemetry, ventilator circuits).
+*   **Clinical Intervention:** The system cannot alter patient medication dosages, modify automated dispensing cabinet locks, or interface with infusion pumps.
+*   **Physical Trapping:** The system cannot physically lock egress doors that would impede human evacuation routes during a fire or power crisis.
+
+## 5. Audit Logging Requirements
+To satisfy Joint Commission and regulatory compliance standards, every decision made by the orchestration platform is immutably recorded.
+*   **WORM Storage:** All state changes, API payloads, and routing decisions are hashed and written to a Write-Once-Read-Many (WORM) cryptographic ledger.
+*   **Payload Requirements:** Every log entry must contain:
+    1. The specific telemetry that triggered the event.
+    2. The calculated Confidence Score and Patient Risk Impact (PRI).
+    3. The exact API request / action executed.
+    4. The ID and timestamp of the human who approved/denied the action (if Tier 2).
+
+## 6. Rollback Authorization
+Rules governing the reversal of an orchestration sequence.
+*   **Autonomous Rollback:** The AOA can autonomously roll back Tier 1 actions (e.g., canceling an automated fuel request) if the Correlation Agent detects a false positive and issues a "Stand Down" signal.
+*   **Human-Gated Rollback:** Once a Tier 2 action (or Glass Break override) is executed, *only* a human Incident Commander can authorize the rollback (e.g., reconnecting the EHR to the main network). The AI cannot autonomously declare a major crisis "Resolved" and tear down clinical containment lines.

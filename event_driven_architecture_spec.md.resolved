@@ -1,0 +1,196 @@
+# Goal Description
+
+Provide the implementation-focused technical design for the Event-Driven Architecture (EDA) of the Healthcare Crisis Intelligence Orchestrator. This document defines the Kafka-based event bus topologies, routing behaviors, partition strategies, and exact JSON schemas required by backend engineering teams to implement the Antigravity Architecture v1.0.
+
+## User Review Required
+> [!IMPORTANT]
+> Please review the partitioning strategy, retention policies, and schema versioning compatibility rules. Confirm that the Dead-Letter Queue (DLQ) automated replay mechanisms and the At-Least-Once vs Exactly-Once delivery guarantees meet operational compliance requirements before backend implementation begins.
+
+## Proposed Changes
+
+### 1. Kafka Topics and Routing Patterns
+
+**Topic Naming Convention:** `[domain].[classification].[bus-type].[version]`
+*(e.g., `clinical.telemetry.ingestion.v1`)*
+
+#### Core Event Buses
+| Bus / Topic Name | Partitioning Strategy | Retention Policy | Ordering Guarantee |
+| :--- | :--- | :--- | :--- |
+| `*.ingestion.v1` | Key: `source_device_id` (High throughput, 64 partitions) | 24 Hours (Volatile) | Strict Ordering per Device |
+| `*.orchestration.v1` | Key: `crisis_id` (Medium throughput, 16 partitions) | 7 Days (Replayable) | Strict Ordering per Crisis |
+| `*.interaction.v1` | Key: `human_id` (Low latency, 8 partitions) | 24 Hours | Strict Ordering per Human |
+| `*.audit.v1` | Key: `transaction_id` (Compliance, 32 partitions) | Infinite (Compacted) | Global Ordering via Sequencer |
+| `*.simulation.v1` | Key: `scenario_id` (Compute-heavy, 32 partitions) | 1 Hour (Ephemeral) | No guarantee |
+| `*.dlq.v1` | Key: `original_key` (Error handling, 8 partitions) | 30 Days | Strict Ordering per Error |
+
+#### Routing & Fallback (Degraded-Mode Queues)
+*   **DLQ Behavior:** Any payload failing schema validation or exceeding max retries (3) is routed to `[domain].dlq.v1`. A separate DLQ processor attempts to re-parse known edge cases or alerts DevOps.
+*   **Replay Strategy:** If a downstream agent (e.g., AOA) crashes, Kafka consumer offsets are explicitly NOT committed. Upon restart, the agent automatically replays the uncommitted orchestration events to ensure zero data loss.
+*   **Fallback Queues:** If the main `orchestration` cluster degrades or network partitions occur, critical events failover to `emergency.fallback.v1`—an isolated, separate physical Kafka cluster running on localized hospital hardware, bypassing cloud routing.
+
+### 2. Canonical JSON Schemas & Sample Payloads
+
+*All payloads strictly enforce UTC ISO-8601 timestamps and UUIDv4 IDs.*
+
+#### 2.1 Unified Event Payload (SIA Output)
+```json
+{
+  "event_id": "a1b2c3d4-...",
+  "timestamp": "2026-05-17T12:00:00Z",
+  "source": "EHR_ADT",
+  "confidence_baseline": 0.98,
+  "payload": {
+    "metric": "er_wait_time",
+    "value": 315,
+    "unit": "minutes"
+  }
+}
+```
+
+#### 2.2 Crisis State Object (CCA Output)
+```json
+{
+  "crisis_id": "cr_88492",
+  "timestamp": "2026-05-17T12:01:00Z",
+  "type": "HEATWAVE_SURGE",
+  "severity": "CRITICAL",
+  "contributing_events": ["a1b2c3d4-..."]
+}
+```
+
+#### 2.3 Verified Crisis State (C&CA Output)
+```json
+{
+  "crisis_id": "cr_88492",
+  "verified_timestamp": "2026-05-17T12:01:15Z",
+  "confidence_score": 0.95,
+  "contradictions_found": false
+}
+```
+
+#### 2.4 Resource Allocation Blueprint (RAA Output)
+```json
+{
+  "blueprint_id": "bp_449",
+  "crisis_id": "cr_88492",
+  "timestamp": "2026-05-17T12:02:00Z",
+  "actions_required": [
+    {
+      "action_id": "act_1",
+      "type": "HALT_ELECTIVE_SURGERIES",
+      "tier": 2,
+      "pri_score": 850
+    }
+  ]
+}
+```
+
+#### 2.5 Human Override Payload & Approval Token (HOA / MIA)
+```json
+{
+  "token_id": "tok_991",
+  "blueprint_id": "bp_449",
+  "approver_id": "cmd_alpha",
+  "auth_type": "BIOMETRIC_FACEID",
+  "status": "APPROVED",
+  "timestamp": "2026-05-17T12:02:45Z"
+}
+```
+
+#### 2.6 Action Execution Manifest (AOA Output)
+```json
+{
+  "execution_id": "exec_55",
+  "blueprint_id": "bp_449",
+  "action_id": "act_1",
+  "target_api": "https://ehr.internal/api/schedules/halt",
+  "status": "SUCCESS",
+  "timestamp": "2026-05-17T12:03:00Z"
+}
+```
+
+#### 2.7 Mobile SOS Payload (MIA Input)
+```json
+{
+  "sos_id": "sos_771",
+  "device_id": "dev_994",
+  "timestamp": "2026-05-17T11:59:00Z",
+  "location": {"lat": 34.0522, "lon": -118.2437, "accuracy_m": 5},
+  "incident_type": "MASS_CASUALTY",
+  "offline_cached": false
+}
+```
+
+### 3. Schema Versioning & Validation
+- **Versioning Strategy:** Managed via Confluent Schema Registry (JSON Schema). Schemas use Strict Semantic Versioning (e.g., `v1.2.0`).
+- **Backward Compatibility:** `FORWARD_TRANSITIVE`. Producers can add optional fields. Removing required fields or changing core data types will be rejected by the registry before deployment.
+- **Event Validation Pipeline:** The Ingestion Gateway intercepts all payloads, validating them against the Schema Registry *before* publishing to Kafka. Invalid payloads trigger an HTTP 400 or route directly to the DLQ if ingestion is asynchronous.
+- **Deduplication:** SIA maintains a Redis-backed Bloom filter for `event_id` and `hash(payload)` over a 5-minute sliding window to aggressively cull duplicate telemetry.
+
+### 4. Throughput, Delivery & Fault Tolerance
+- **Delivery Requirements:**
+  - **Ingestion:** *At-Least-Once* (`acks=1`) to favor extremely high throughput during telemetry storms.
+  - **Orchestration/Interaction:** *Exactly-Once* (`acks=all`, `transactional.id`) to prevent catastrophic duplicate executions (e.g., dispatching two ambulances by mistake).
+- **Retry Propagation:** Standard exponential backoff (1s, 2s, 4s...). However, MIA SOS payloads use aggressive linear retries (every 5s) due to life safety constraints.
+- **Stale Event Expiration:** Interactive events (HOA approvals) have a TTL of 60 seconds (matching the Glass Break threshold). A Kafka `RecordInterceptor` autonomously drops events older than TTL.
+
+### 5. Diagrams
+
+#### 5.1 Producer / Consumer Ownership Mapping
+```mermaid
+graph LR
+    SIA[SIA: Producer] -->|Unified Event| IB[Ingestion Bus]
+    IB -->|Unified Event| CCA[CCA: Consumer]
+    IB -->|Unified Event| C_CA[C&CA: Consumer]
+    CCA -->|Crisis State| OB[Orchestration Bus]
+    OB -->|Crisis State| C_CA
+    C_CA -->|Verified State| OB
+    OB -->|Verified State| RAA[RAA: Consumer]
+    RAA -->|Blueprint| OB
+    OB -->|Blueprint| HOA[HOA: Consumer]
+    HOA -->|Approval Request| IntB[Interaction Bus]
+    IntB -->|Approval Request| MIA[MIA: Consumer]
+    MIA -->|Auth Token| IntB
+    IntB -->|Auth Token| HOA
+    HOA -->|Authorized Blueprint| OB
+    OB -->|Authorized Blueprint| AOA[AOA: Consumer]
+    AOA -->|Execution Manifest| OB
+```
+
+#### 5.2 Event Lifecycle & Recovery Flow
+```mermaid
+sequenceDiagram
+    participant Source as Telemetry Source
+    participant SIA as SIA
+    participant Kafka as Kafka (Ingestion)
+    participant Redis as Redis (Dedupe)
+    participant CCA as CCA
+    participant DLQ as Dead Letter Queue
+    
+    Source->>SIA: Send Raw Payload
+    SIA->>Redis: Check Bloom Filter (is duplicate?)
+    alt Is Duplicate
+        Redis-->>SIA: True
+        SIA->>SIA: Drop Event
+    else New Event
+        Redis-->>SIA: False
+        SIA->>SIA: Normalize & Validate Schema
+        alt Schema Invalid
+            SIA->>DLQ: Route to DLQ
+        else Schema Valid
+            SIA->>Kafka: Publish Unified Event
+            Kafka-->>SIA: ACK
+            Kafka->>CCA: Consume Event
+            alt CCA Crashes before Commit
+                CCA->>Kafka: Disconnect
+                Kafka->>CCA (Restarted): Replay Uncommitted Event
+            end
+        end
+    end
+```
+
+## Verification Plan
+### Automated Tests
+- **Kafka Chaos Testing:** Kill Kafka brokers randomly to ensure producers buffer correctly and failover to `emergency.fallback.v1`.
+- **Schema Evolution Tests:** CI/CD pipeline runs `confluent schema-registry compatibility` checks to prevent breaking changes from merging into the main branch.
+- **Deduplication Verification:** Blast the SIA with 10,000 identical JSON payloads in 1 second; verify the Orchestration bus only receives exactly 1 output event.

@@ -1,0 +1,57 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: oversight-agent-netpol
+  namespace: medusa-orchestration
+spec:
+  podSelector:
+    matchLabels:
+      app: oversight-agent
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Only accept gRPC from orchestrator-agent in medusa-execution namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: medusa-execution
+      podSelector:
+        matchLabels:
+          app: orchestrator-agent
+    ports:
+    - protocol: TCP
+      port: 50051
+  # Accept HTTP from ingress controller and MIA
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: medusa-orchestration
+    ports:
+    - protocol: TCP
+      port: 8085
+  egress:
+  # Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Kafka
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kafka-cluster
+    ports:
+    - protocol: TCP
+      port: 9093
+  # OTel collector
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 4317

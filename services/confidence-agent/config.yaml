@@ -1,0 +1,13 @@
+env: development
+health_addr: "0.0.0.0:8082"
+kafka_brokers:
+  - "kafka-broker:9093"
+kafka_input_topic: "clinical.orchestration.anomaly.v1"
+kafka_output_topic: "clinical.orchestration.confidence.v1"
+kafka_dlq_topic: "system.dlq.v1"
+kafka_consumer_group: "confidence-group"
+kafka_worker_pool_size: 8
+redis_url: "redis://redis-master:6379"
+otel_endpoint: "http://otel-collector:4317"
+contradiction_decay: 0.60
+schema_version: "1.0.0"

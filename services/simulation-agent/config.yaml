@@ -1,0 +1,24 @@
+env: development
+http_addr: "0.0.0.0:8090"
+schema_version: "1.0.0"
+
+kafka:
+  brokers: "kafka-broker:9093"
+  input_topic: "clinical.simulation.request.v1"
+  output_topic: "clinical.simulation.result.v1"
+  dlq_topic: "system.dlq.v1"
+  consumer_group: "simulation-group"
+  worker_count: 8
+
+redis:
+  url: "redis://redis-master:6379"
+
+otel:
+  endpoint: "http://otel-collector:4317"
+
+simulation:
+  default_mc_runs: 1000
+  worker_threads: 8
+  chaos_factor: 0.15
+  gpu_enabled: false
+  max_sim_secs: 120

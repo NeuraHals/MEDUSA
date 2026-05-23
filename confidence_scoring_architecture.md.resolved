@@ -1,0 +1,60 @@
+# Confidence Scoring & Contradiction Handling Architecture
+
+This document defines the Bayesian-inspired logic layer utilized by the Correlation & Classification Agent (CCA) to evaluate signal veracity, detect contradictions, and propagate uncertainty into the Action Orchestrator Agent (AOA) to modulate the aggressiveness of autonomous responses.
+
+---
+
+## 1. Ransomware Attack on Hospital Infrastructure
+
+*   **Confidence Scoring Methodology:** Evaluates the intersection of Endpoint Detection (EDR) telemetry and Network Flow anomalies.
+    *   `Confidence = (EDR_Weight * 0.6) + (NetFlow_Weight * 0.3) + (Helpdesk_Weight * 0.1)`
+*   **Source Reliability Weighting:**
+    *   EDR/CrowdStrike API: **High (0.90)** (Cryptographic entropy analysis).
+    *   NetFlow Anomaly Detection: **Medium (0.70)**.
+    *   User Helpdesk Tickets (Locked out): **Low (0.40)** (Prone to user error).
+*   **Contradiction Detection:** EDR detects mass file encryption and high CPU entropy, BUT Active Directory logs indicate the executing user is a known, authorized service account executing a scheduled task.
+*   **Misinformation Handling (False Ransomware Indicator):** If encryption entropy spikes correlate precisely with a known backup synchronization schedule (e.g., Veeam or Rubrik scheduled jobs), the CCA tags the event as a *Benign Anomaly* and suppresses the ransomware alert.
+*   **Uncertainty Propagation:** If confidence scores marginal (e.g., 65-79%), the AOA dynamically scales down aggressiveness. Instead of executing full `Immediate Network Isolation`, the AOA applies strict QoS throttling to the anomalous ports to slow potential spread while awaiting human review.
+*   **Verification Escalation Rules:** If a contradiction is detected (EDR vs. AD), the system queries the Backup Controller API. If the API times out or returns anomalous job IDs, the system pages the On-Call Security Engineer: `URGENT: Conflicting EDR/AD Telemetry. Manual verification of backup job #4492 required.`
+
+---
+
+## 2. Hospital Power Outage
+
+*   **Confidence Scoring Methodology:** Evaluates temporal alignment between municipal grid APIs and internal localized hardware sensors.
+*   **Source Reliability Weighting:**
+    *   Automatic Transfer Switch (ATS) / SCADA: **Critical (0.98)**.
+    *   Server Room UPS SNMP: **High (0.90)**.
+    *   Zone Ambient IoT Lighting/Temp Sensors: **Low (0.50)**.
+*   **Contradiction Detection:** The ATS reports `Mains_Voltage = 120V (UTILITY_SYNCED)`, but the Server Room UPS array reports `STATE = DISCHARGING (POWER LOSS)`.
+*   **Misinformation Handling:** The system identifies localized hardware faults vs. facility-wide failures. If only a single UPS is discharging while the ATS confirms grid stability, the CCA classifies the event as an *Isolated Breaker Trip* rather than a *Grid Outage*.
+*   **Uncertainty Propagation:** If confidence in a full grid failure is < 85% due to conflicting zone telemetry, the AOA avoids facility-wide load shedding. It only executes localized load shedding strictly within the specific zones reporting power loss.
+*   **Verification Escalation Rules:** If ATS and UPS signals contradict for greater than 60 seconds, the system dispatches an automated radio alert to the localized Facility Engineering team to physically inspect the specific electrical panel serving the UPS, holding off on automated generator commands.
+
+---
+
+## 3. Heatwave-Driven Patient Overflow
+
+*   **Confidence Scoring Methodology:** Weights high-latency predictive models against low-latency ground-truth telemetry.
+*   **Source Reliability Weighting:**
+    *   EHR Bed Management & ER Intake API: **Critical (0.95)** (Ground truth).
+    *   Local Hospital Weather Station IoT: **High (0.85)**.
+    *   National Weather Service (NWS) API Alerts: **Medium (0.65)** (Broad, regional predictions).
+*   **Contradiction Detection:** A low-confidence regional NWS alert predicts a severe, record-breaking heatwave, but the local ambient sensors read normal temperatures, and ER intake volumes remain at baseline.
+*   **Misinformation Handling:** The system acts as a dampener. It suppresses preemptive, highly disruptive staffing surges if local ground-truth telemetry continuously contradicts the broad predictive models over a 2-hour sliding window.
+*   **Uncertainty Propagation:** If predictive confidence is moderate (65-80%) but local impact is not yet realized, the AOA does not halt all elective surgeries. Instead, it enacts a *Soft Freeze* (preventing new elective bookings for the next 48 hours) and pre-stages triage tents without physically erecting them.
+*   **Verification Escalation Rules:** If regional predictive signals escalate to `CRITICAL` but local signals remain `NOMINAL`, the system escalates to the ER Charge Nurse via the mobile app: `Regional models predict imminent surge. Local telemetry nominal. Request human approval for preemptive Stage 1 staffing callout.`
+
+---
+
+## 4. Flooded Ambulance Routes During Heavy Rainfall
+
+*   **Confidence Scoring Methodology:** Cross-references stationary GPS objects with known topographical flood-plains and municipal sensor data.
+*   **Source Reliability Weighting:**
+    *   Municipal/USGS Stream & Underpass Sensors: **Critical (0.95)**.
+    *   Ambulance GPS Telemetry: **High (0.85)**.
+    *   Waze / Google Traffic API / Social Media scraping: **Low (0.50)**.
+*   **Contradiction Detection:** Municipal flood sensors report an underpass as `CLEAR`, but Waze APIs report `ROAD CLOSED` and the approaching ambulance's GPS telemetry is stationary.
+*   **Misinformation Handling (Stale Telemetry):** The CCA checks the temporal metadata of the GPS ping. If the GPS timestamp is > 3 minutes old, it detects *Stale Telemetry*. The system assumes a loss of cellular connection under the bridge rather than a stranded vehicle, provided the flood sensors remain clear.
+*   **Uncertainty Propagation:** If road status confidence falls below 85% (e.g., conflicting sensor vs. traffic API data), the AOA does not outright ban the route. Instead, it assigns a `cost_multiplier: 50` to the road segment. Routing algorithms will attempt to find faster alternatives, but will still utilize the route if detours add > 15 minutes to critical patient transit.
+*   **Verification Escalation Rules:** If an ambulance becomes stationary in a suspected flood zone, and sensor data is conflicting or unavailable, the system executes an automated CAD radio check to the vehicle: `Unit 4, telemetry indicates stationary in high-risk zone. Confirm route status.` The system requires a manual radio acknowledgment before finalizing the route as `FAILED` and rerouting other units.

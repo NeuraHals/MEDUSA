@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: recovery-agent-netpol
+  namespace: medusa-execution
+spec:
+  podSelector:
+    matchLabels:
+      app: recovery-agent
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Health and status query from orchestration services
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: medusa-execution
+    ports:
+    - protocol: TCP
+      port: 8089
+  egress:
+  # Kafka
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kafka-cluster
+    ports:
+    - protocol: TCP
+      port: 9093
+  # Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # OTel
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 4317
+  # Undo API calls to internal infrastructure services (HTTPS)
+  - ports:
+    - protocol: TCP
+      port: 443
+  - ports:
+    - protocol: TCP
+      port: 80

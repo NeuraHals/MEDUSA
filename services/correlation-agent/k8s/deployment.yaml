@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: correlation-agent
+  namespace: medusa-orchestration
+  labels:
+    app: correlation-agent
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: correlation-agent
+  template:
+    metadata:
+      labels:
+        app: correlation-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      priorityClassName: critical-execution
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+      containers:
+      - name: correlation-agent
+        image: antigravity/correlation-agent:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
+          name: health
+        envFrom:
+        - configMapRef:
+            name: correlation-agent-config
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 3
